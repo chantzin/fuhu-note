@@ -1,5 +1,5 @@
 /* =====================================================
- * EVERNOT 筆記 — 主程式
+ * FUHU-NOTE 筆記 — 主程式
  * 功能：筆記本／筆記／標籤／搜尋／垃圾桶／離線同步／Google 登入／備份
  * ===================================================== */
 import {
@@ -431,7 +431,7 @@ function readAsDataURL(file) {
  * ===================================================== */
 function exportBackup() {
   const data = {
-    app: 'EVERNOT', version: '1.0',
+    app: 'FUHU-NOTE', version: '1.1',
     exportedAt: new Date().toISOString(),
     notebooks: state.notebooks.filter((n) => !n.deleted),
     notes: state.notes.filter((n) => !n.deleted)
@@ -441,10 +441,10 @@ function exportBackup() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   a.href = URL.createObjectURL(blob);
-  a.download = `EVERNOT-備份-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+  a.download = `FUHU-NOTE-備份-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('備份檔已匯出，請存入 D:\\EVERNOT\\備份');
+  toast('備份檔已匯出，請存入 D:\\FUHU-NOTE\\備份');
 }
 
 function importBackup(file) {

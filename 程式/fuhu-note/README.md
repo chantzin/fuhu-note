@@ -1,4 +1,4 @@
-# EVERNOT 筆記 — PWA 原始碼
+# FUHU-NOTE 筆記 — PWA 原始碼
 
 類似 Evernote 的跨平台筆記 App：**離線優先、Google 帳號同步**。純前端、零建置，可部署於任何靜態主機。
 
@@ -8,7 +8,7 @@
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-或雙擊 `D:\EVERNOT\安裝程式\啟動EVERNOT本機版.bat`，開啟 `http://127.0.0.1:8000`。
+或雙擊 `D:\FUHU-NOTE\安裝程式\啟動FUHU-NOTE本機版.bat`，開啟 `http://127.0.0.1:8000`。
 
 ## 目錄
 
@@ -28,10 +28,10 @@ python -m http.server 8000 --bind 127.0.0.1
 
 ## 完整文件
 
-- `D:\EVERNOT\文件\使用者手冊.md` — 功能與操作
-- `D:\EVERNOT\文件\Firebase設定指南.md` — 啟用 Google 登入與同步
-- `D:\EVERNOT\文件\建置建議報告.md` — 技術選型與規劃
+- `D:\FUHU-NOTE\文件\使用者手冊.md` — 功能與操作
+- `D:\FUHU-NOTE\文件\Firebase設定指南.md` — 啟用 Google 登入與同步
+- `D:\FUHU-NOTE\文件\建置建議報告.md` — 技術選型與規劃
 
 ## 版本
 
-v1.0（MVP）— 2026-10-05。變更請記錄於 `D:\EVERNOT\文件\變更紀錄.md`。
+v1.1（MVP）— 2026-10-05。變更請記錄於 `D:\FUHU-NOTE\文件\變更紀錄.md`。

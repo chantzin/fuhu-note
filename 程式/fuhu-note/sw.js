@@ -1,8 +1,8 @@
-/* EVERNOT 筆記 — Service Worker
+/* FUHU-NOTE 筆記 — Service Worker
  * 離線支援：快取應用外殼與 Firebase SDK，斷網仍可開啟與編輯。
  * 部署時請以 HTTPS 或 localhost 提供服務（Service Worker 的要求）。
  */
-const CACHE_NAME = 'evernot-v1';
+const CACHE_NAME = 'fuhu-note-v1';
 const PRECACHE = [
   './',
   './index.html',

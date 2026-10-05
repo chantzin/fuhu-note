@@ -1,6 +1,6 @@
 {
-  "name": "EVERNOT 筆記",
-  "short_name": "EVERNOT",
+  "name": "FUHU-NOTE 筆記",
+  "short_name": "FUHU-NOTE",
   "description": "類似 Evernote 的跨平台筆記 App：離線優先、Google 帳號同步",
   "lang": "zh-Hant",
   "start_url": "./",

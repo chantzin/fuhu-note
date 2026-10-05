@@ -1,6 +1,0 @@
-{
-  "name": "evernot-pwa",
-  "private": true,
-  "type": "module",
-  "description": "EVERNOT 筆記 PWA — 純前端、無建置步驟，可部署於任何靜態主機（Firebase Hosting / Nginx 等）"
-}

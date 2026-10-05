@@ -1,8 +1,9 @@
 /* =====================================================
- * EVERNOT 筆記 — 本地資料庫層（IndexedDB）
+ * FUHU-NOTE 筆記 — 本地資料庫層（IndexedDB）
  * 離線優先：所有讀寫先落本機，同步引擎再與雲端交換。
  * ===================================================== */
 
+/* 資料庫名稱保留舊名「evernot-db」，以相容更名前已建立的本機資料 */
 const DB_NAME = 'evernot-db';
 const DB_VERSION = 1;
 
@@ -74,9 +75,9 @@ async function ensureFirstRun(uid) {
   await saveNotebookLocal(nb);
   const note = {
     id: genUid('nt'), ownerId: uid, notebookId: nb.id,
-    title: '歡迎使用 EVERNOT',
-    content: '<h3>這是一則歡迎筆記</h3><p>EVERNOT 是類似 Evernote 的筆記工具：</p><ul><li><b>離線優先</b>——斷網也能完整編輯，恢復連線自動同步</li><li><b>Google 帳號登入</b>——手機與電腦登入同一帳號即同步（需完成 Firebase 設定）</li><li><b>筆記本＋標籤＋搜尋＋垃圾桶</b>——完整的分類與管理</li></ul><p>刪掉這則筆記即可開始使用。</p>',
-    contentText: '歡迎使用 EVERNOT 這是一則歡迎筆記 EVERNOT 是類似 Evernote 的筆記工具 離線優先 斷網也能完整編輯 恢復連線自動同步 Google 帳號登入 手機與電腦登入同一帳號即同步 需完成 Firebase 設定 筆記本 標籤 搜尋 垃圾桶 完整的分類與管理 刪掉這則筆記即可開始使用',
+    title: '歡迎使用 FUHU-NOTE',
+    content: '<h3>這是一則歡迎筆記</h3><p>FUHU-NOTE 是類似 Evernote 的筆記工具：</p><ul><li><b>離線優先</b>——斷網也能完整編輯，恢復連線自動同步</li><li><b>Google 帳號登入</b>——手機與電腦登入同一帳號即同步（需完成 Firebase 設定）</li><li><b>筆記本＋標籤＋搜尋＋垃圾桶</b>——完整的分類與管理</li></ul><p>刪掉這則筆記即可開始使用。</p>',
+    contentText: '歡迎使用 FUHU-NOTE 這是一則歡迎筆記 FUHU-NOTE 是類似 Evernote 的筆記工具 離線優先 斷網也能完整編輯 恢復連線自動同步 Google 帳號登入 手機與電腦登入同一帳號即同步 需完成 Firebase 設定 筆記本 標籤 搜尋 垃圾桶 完整的分類與管理 刪掉這則筆記即可開始使用',
     tags: ['歡迎'], trash: false, deleted: false,
     createdAt: now, updatedAt: now,
     f: { title: now, content: now, notebookId: now, tags: now, trash: now }

@@ -1,5 +1,5 @@
 /* =====================================================
- * EVERNOT 筆記 — 同步引擎（Firebase Auth + Firestore）
+ * FUHU-NOTE 筆記 — 同步引擎（Firebase Auth + Firestore）
  * 離線優先：本地 IndexedDB 為第一真相來源，
  * 雲端為同步中樞。衝突以「欄位層級 LWW（最後寫入勝出）」處理。
  * 未設定 FIREBASE_CONFIG 時自動進入本機模式。

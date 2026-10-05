@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""EVERNOT 筆記 — PWA 圖示產生腳本
+"""FUHU-NOTE 筆記 — PWA 圖示產生腳本
 執行：python scripts/generate_icons.py
 產出：icons/icon-192.png、icons/icon-512.png（綠底白筆記本圖樣）
 """

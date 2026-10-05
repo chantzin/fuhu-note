@@ -1,7 +1,7 @@
 /* =====================================================
- * EVERNOT 筆記 — Firebase 設定檔
+ * FUHU-NOTE 筆記 — Firebase 設定檔
  * =====================================================
- * 使用方法（詳見 D:\EVERNOT\文件\Firebase設定指南.md）：
+ * 使用方法（詳見 D:\FUHU-NOTE\文件\Firebase設定指南.md）：
  *
  * 1. 前往 https://console.firebase.google.com 建立專案
  * 2. 新增「網頁應用程式」，複製 firebaseConfig 內容

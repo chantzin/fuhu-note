@@ -1,31 +1,31 @@
-# EVERNOT 筆記 — Firebase 設定指南
+# FUHU-NOTE 筆記 — Firebase 設定指南
 
-> 目標：讓 EVERNOT 使用 Google 帳號登入，並啟用跨裝置雲端同步。
+> 目標：讓 FUHU-NOTE 使用 Google 帳號登入，並啟用跨裝置雲端同步。
 > 全程約 20–30 分鐘。Firebase 免費方案（Spark）即足夠個人使用。
 
 ## 步驟 1 — 建立 Firebase 專案
 
 1. 開啟 [Firebase 主控台](https://console.firebase.google.com)（需 Google 帳號）。
-2. 「建立專案」→ 輸入專案名稱（例如 `evernot-app`）→ 依引導完成（Analytics 可不啟用）。
+2. 「建立專案」→ 輸入專案名稱（例如 `fuhu-note-app`）→ 依引導完成（Analytics 可不啟用）。
 3. 專案建立後，畫面右上角可切換專案。
 
 ## 步驟 2 — 註冊網頁應用程式（取得設定）
 
-1. 專案總覽 →「</> 網頁應用程式」→ 輸入應用暱稱（例如 `evernot-pwa`）→ 註冊。
+1. 專案總覽 →「</> 網頁應用程式」→ 輸入應用暱稱（例如 `fuhu-note`）→ 註冊。
 2. 畫面上出現的 `firebaseConfig` 內容，形如：
 
 ```js
 const firebaseConfig = {
   apiKey: "AIza...",
-  authDomain: "evernot-app.firebaseapp.com",
-  projectId: "evernot-app",
-  storageBucket: "evernot-app.appspot.com",
+  authDomain: "fuhu-note-app.firebaseapp.com",
+  projectId: "fuhu-note-app",
+  storageBucket: "fuhu-note-app.appspot.com",
   messagingSenderId: "123456789",
   appId: "1:123456789:web:abc..."
 };
 ```
 
-3. 開啟 `D:\EVERNOT\程式\evernot-pwa\js\config.js`，將 `FIREBASE_CONFIG = null;` 改為：
+3. 開啟 `D:\FUHU-NOTE\程式\fuhu-note\js\config.js`，將 `FIREBASE_CONFIG = null;` 改為：
 
 ```js
 const FIREBASE_CONFIG = {
@@ -50,7 +50,7 @@ const FIREBASE_CONFIG = {
 2. 位置選離你最近的區域（例如 `asia-east1` 台灣／`asia-northeast1`）。
 3. **安全規則模式選「測試模式」**（先能開發），完成建立。
 4. 建立後到「規則」分頁，**整段覆蓋**為 `firestore.rules` 檔的內容
-   （檔案位置：`D:\EVERNOT\程式\evernot-pwa\firestore.rules`，內容以 uid 隔離每位使用者資料）。
+   （檔案位置：`D:\FUHU-NOTE\程式\fuhu-note\firestore.rules`，內容以 uid 隔離每位使用者資料）。
 5. 發布規則。
 
 > 上線前務必完成此規則設定；測試模式等於任何人可讀寫，勿長期使用。
@@ -62,7 +62,7 @@ const FIREBASE_CONFIG = {
 
 ## 步驟 6 — 本機測試
 
-1. 雙擊 `D:\EVERNOT\安裝程式\啟動EVERNOT本機版.bat`。
+1. 雙擊 `D:\FUHU-NOTE\安裝程式\啟動FUHU-NOTE本機版.bat`。
 2. 開啟 `http://127.0.0.1:8000` → 側欄底部出現「使用 Google 帳號登入」→ 登入。
 3. 狀態列顯示「已同步」即成功。新增筆記 → 在另一裝置（手機）登入同一帳號 → 筆記出現即同步成功。
 
@@ -71,7 +71,7 @@ const FIREBASE_CONFIG = {
 **方式一：Firebase Hosting（推薦，簡單）**
 
 ```bat
-cd D:\EVERNOT\程式\evernot-pwa
+cd D:\FUHU-NOTE\程式\fuhu-note
 npm install -g firebase-tools
 firebase login
 firebase init hosting        REM 公開目錄填「.」，單頁應用選 Yes
@@ -83,7 +83,7 @@ firebase deploy
 - 手機 Chrome 開啟該網址 →「加到主畫面」→ 即安裝為 App（含離線）。
 
 **方式二：自有伺服器（如你的 Ubuntu 主機）**
-- 將 `evernot-pwa` 整個資料夾內容放到網頁根目錄（如 Nginx），設定 HTTPS。
+- 將 `fuhu-note` 整個資料夾內容放到網頁根目錄（如 Nginx），設定 HTTPS。
 - 網址加入 Firebase 已授權網域即可。
 
 ## 步驟 8 — 上線後檢查清單
