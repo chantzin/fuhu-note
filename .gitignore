@@ -1,0 +1,5 @@
+# EVERNOT 專案 — Git 忽略規則
+__pycache__/
+*.pyc
+備份/
+副本/
