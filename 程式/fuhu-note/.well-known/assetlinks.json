@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.web.fuhu_note.twa",
+        "sha256_cert_fingerprints": ["79:06:33:F1:31:5E:44:6F:FD:24:E6:98:85:49:D6:CA:8F:53:44:1F:DD:45:66:F4:82:68:1E:8D:77:5E:94:C4"]
+      }
+    }]
