@@ -591,6 +591,7 @@ function wireEvents() {
   el('btn-menu').onclick = () => el('sidebar').classList.toggle('open');
   el('btn-mobile-menu').onclick = () => el('sidebar').classList.add('open');
   el('btn-back-list').onclick = () => { el('editor-pane').classList.add('hidden'); };
+  el('btn-back-editor').onclick = () => { el('editor-pane').classList.add('hidden'); };
   // 行動版：點側欄內的按鈕後自動收合；點主區內容也收合
   el('sidebar').addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -627,8 +628,8 @@ function selectNote(id) {
   state.editorDirty = false;
   renderList();
   renderEditor();
-  // 行動版：進入編輯畫面
-  if (window.innerWidth <= 820) { el('editor-pane').classList.remove('hidden'); el('btn-back-list').classList.remove('hidden'); }
+  // 行動版：進入編輯畫面（返回按鈕在編輯器工具列內）
+  if (window.innerWidth <= 820) { el('editor-pane').classList.remove('hidden'); }
 }
 
 /* =====================================================
