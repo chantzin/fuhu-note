@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUHU-NOTE 下載中心</title>
+<meta name="description" content="FUHU-NOTE 跨平台筆記 App 下載：安卓 APK、手機 PWA、Windows 電腦版安裝檔">
+<meta name="theme-color" content="#0F7B4D">
+<link rel="icon" href="../icons/icon-192.png" type="image/png">
+<style>
+  :root {
+    --green: #0F7B4D;
+    --green-dark: #0A5F3C;
+    --green-soft: #E8F4EE;
+    --bg: #F6F7F4;
+    --ink: #1F2937;
+    --muted: #6B7280;
+    --card: #FFFFFF;
+    --line: #E5E7EB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* ===== 頁首 ===== */
+  header.hero {
+    background: linear-gradient(160deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff;
+    border-radius: 0 0 24px 24px;
+    padding: 32px 20px 28px;
+    text-align: center;
+    margin: 0 -16px 24px;
+  }
+  .hero .logo {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: #fff; display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: 0.5px; }
+  .hero p { font-size: 14px; opacity: 0.92; margin-top: 4px; }
+  .hero .ver {
+    display: inline-block; margin-top: 10px; font-size: 12px;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+    padding: 3px 12px; border-radius: 999px;
+  }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+  }
+  .card .head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .card .head .ic {
+    width: 36px; height: 36px; border-radius: 10px; flex: 0 0 36px;
+    background: var(--green-soft); color: var(--green);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .card h2 { font-size: 17px; font-weight: 700; }
+  .card .desc { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+  .card .meta { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .card .meta b { color: var(--ink); font-weight: 600; }
+
+  .btn {
+    display: block; width: 100%;
+    background: var(--green); color: #fff;
+    text-align: center; font-size: 16px; font-weight: 600;
+    padding: 14px 16px; border: none; border-radius: 12px;
+    text-decoration: none; cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary { background: var(--ink); }
+  .btn.ghost {
+    background: transparent; color: var(--green);
+    border: 1.5px solid var(--green); padding: 12px 16px;
+  }
+  .btn .hint { display: block; font-size: 12px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+
+  ol.steps { font-size: 14px; color: var(--ink); padding-left: 20px; margin: 4px 0 12px; }
+  ol.steps li { margin-bottom: 6px; }
+  ol.steps b { color: var(--green-dark); }
+
+  .note {
+    background: #FFF8E6; border: 1px solid #F2E2AE; color: #7A5C00;
+    font-size: 13px; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
+  }
+  .note b { color: #5C4500; }
+
+  footer { text-align: center; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  footer a { color: var(--green); text-decoration: none; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="logo">
+    <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+      <rect x="10" y="6" width="44" height="52" rx="10" fill="#0F7B4D"/>
+      <rect x="16" y="12" width="32" height="40" rx="7" fill="#FFFFFF"/>
+      <rect x="22" y="22" width="20" height="4" rx="2" fill="#0F7B4D"/>
+      <rect x="22" y="30" width="20" height="4" rx="2" fill="#0F7B4D"/>
+      <rect x="22" y="38" width="13" height="4" rx="2" fill="#0F7B4D"/>
+    </svg>
+  </div>
+  <h1>FUHU-NOTE 下載中心</h1>
+  <p>類似 Evernote 的跨平台筆記 App</p>
+  <span class="ver">版本 v1.2</span>
+</header>
+
+<div class="wrap">
+
+  <div class="note">
+    <b>安裝提醒：</b>安卓安裝 APK 時，若系統詢問「允許安裝未知來源」，請依畫面開啟允許（僅限本次）。安裝後以 <b>Google 帳號</b>登入，即與電腦自動同步。
+  </div>
+
+  <!-- 安卓 APK -->
+  <div class="card">
+    <div class="head">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+        </svg>
+      </span>
+      <h2>安卓手機 — APK 直接安裝</h2>
+    </div>
+    <p class="desc">下載安裝檔，點開即安裝成獨立 App（免開瀏覽器）。</p>
+    <p class="meta">檔案：FUHU-NOTE-v1.2.apk ・ 大小：<b>1.0 MB</b> ・ 已簽名</p>
+    <a class="btn" href="https://files.catbox.moe/mpnwe9.apk">
+      下載 APK
+      <span class="hint">Android 7.0 以上適用</span>
+    </a>
+  </div>
+
+  <!-- 手機 PWA -->
+  <div class="card">
+    <div class="head">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/>
+        </svg>
+      </span>
+      <h2>手機 PWA — 加到主畫面（免安裝檔）</h2>
+    </div>
+    <p class="desc">不想裝 APK？用 Chrome 開啟主程式，就能加入主畫面當 App 用。</p>
+    <ol class="steps">
+      <li>Chrome 開啟 <b>https://fuhu-note.web.app</b></li>
+      <li>點右上角「⋮」選單 → <b>加到主畫面</b>（或「安裝應用程式」）</li>
+      <li>桌面出現 FUHU-NOTE 圖示，即完成</li>
+    </ol>
+    <a class="btn ghost" href="https://fuhu-note.web.app">開啟 FUHU-NOTE</a>
+  </div>
+
+  <!-- 電腦版 -->
+  <div class="card">
+    <div class="head">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
+        </svg>
+      </span>
+      <h2>Windows 電腦 — 一鍵安裝版</h2>
+    </div>
+    <p class="desc">安裝檔（FUHU-NOTE-Setup.exe，約 11.5 MB）位於電腦本機：<b>D:\FUHU-NOTE\安裝程式\</b>，雙擊安裝即可，內建程式環境，不需另行安裝任何軟體。</p>
+  </div>
+
+  <footer>
+    FUHU-NOTE v1.2 ・ <a href="https://fuhu-note.web.app">開啟主程式</a> ・ 跨裝置以 Google 帳號同步
+  </footer>
+</div>
+</body>
+</html>
