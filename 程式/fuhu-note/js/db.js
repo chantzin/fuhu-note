@@ -83,7 +83,7 @@ async function ensureFirstRun(uid) {
     f: { title: now, content: now, notebookId: now, tags: now, trash: now }
   };
   await saveNoteLocal(note);
-  await metaSet('firstRun', uid);
+  await metaSet('firstRun', uid || 'local');
 }
 
 export {
