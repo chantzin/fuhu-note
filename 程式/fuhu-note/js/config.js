@@ -11,7 +11,15 @@
  *
  * 未設定時：APP 以「本機模式」運作，僅在本裝置使用、無法跨裝置同步。
  */
-const FIREBASE_CONFIG = null; // ← 貼上設定後，改為 { apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." }
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDeh-fS-maKnz7-veqMVmlxVP-dloE3mlc",
+  authDomain: "fuhu-note.firebaseapp.com",
+  projectId: "fuhu-note",
+  storageBucket: "fuhu-note.firebasestorage.app",
+  messagingSenderId: "699810313817",
+  appId: "1:699810313817:web:7dfeb313a1561a80586348",
+  measurementId: "G-C65LGC0M4J"
+};
 
 /* 本機模式下的使用者識別碼（無 Firebase 時產生，區分本機資料） */
 const LOCAL_UID_PREFIX = 'local-user';
