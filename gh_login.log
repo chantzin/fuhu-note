@@ -1,0 +1,13 @@
+﻿gh : 
+位於 線路:1 字元:145
++ ... h","User"); gh auth login --hostname github.com --git-protocol https  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+! One-time code (9149-8017) copied to clipboard
+Open this URL to continue in your web browser: https://github.com/login/device
+✓ Authentication complete.
+- gh config set -h github.com git_protocol https
+✓ Configured git protocol
+✓ Logged in as chantzin
