@@ -431,7 +431,7 @@ function readAsDataURL(file) {
  * ===================================================== */
 function exportBackup() {
   const data = {
-    app: 'FUHU-NOTE', version: '1.1',
+    app: 'FUHU-NOTE', version: '1.2',
     exportedAt: new Date().toISOString(),
     notebooks: state.notebooks.filter((n) => !n.deleted),
     notes: state.notes.filter((n) => !n.deleted)
@@ -589,7 +589,14 @@ function wireEvents() {
 
   // 行動版
   el('btn-menu').onclick = () => el('sidebar').classList.toggle('open');
+  el('btn-mobile-menu').onclick = () => el('sidebar').classList.add('open');
   el('btn-back-list').onclick = () => { el('editor-pane').classList.add('hidden'); };
+  // 行動版：點側欄內的按鈕後自動收合；點主區內容也收合
+  el('sidebar').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b && b !== el('btn-menu')) el('sidebar').classList.remove('open');
+  });
+  el('main').addEventListener('click', () => el('sidebar').classList.remove('open'));
 
   // 登入 / 設定
   el('login-btn').onclick = doLogin;
