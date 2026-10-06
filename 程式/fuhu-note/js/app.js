@@ -596,7 +596,10 @@ function wireEvents() {
     const b = e.target.closest('button');
     if (b && b !== el('btn-menu')) el('sidebar').classList.remove('open');
   });
-  el('main').addEventListener('click', () => el('sidebar').classList.remove('open'));
+  el('main').addEventListener('click', (e) => {
+    if (e.target.closest('#btn-mobile-menu')) return;
+    el('sidebar').classList.remove('open');
+  });
 
   // 登入 / 設定
   el('login-btn').onclick = doLogin;
