@@ -1,5 +1,6 @@
-# EVERNOT 專案 — Git 忽略規則
+# FUHU-NOTE 專案 — Git 忽略規則
 __pycache__/
 *.pyc
 備份/
 副本/
+程式/fuhu-note/.firebase/
