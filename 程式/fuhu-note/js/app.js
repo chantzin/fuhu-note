@@ -675,6 +675,17 @@ function wireEvents() {
   el('cmd-link').onclick = insertLink;
   el('cmd-image').onclick = () => el('image-file').click();
   el('image-file').addEventListener('change', (e) => { insertImage(e.target.files[0]); e.target.value = ''; });
+  // Android Photo Picker / TWA 已知問題：選擇照片返回後 change 可能不觸發。
+  // 以「頁面回到前景」補救——若 input 內已有檔案而 change 未處理，此時手動插入。
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      const f = el('image-file');
+      if (f && f.files && f.files.length) {
+        insertImage(f.files[0]);
+        f.value = '';
+      }
+    }
+  });
   el('btn-trash-note').onclick = trashNote;
 
   // 行動版

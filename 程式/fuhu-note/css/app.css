@@ -104,6 +104,8 @@ code{font-family:Consolas,Menlo,monospace;font-size:12px;background:#EEF1EC;padd
 /* ============ 編輯器 ============ */
 .editor-pane{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--surface)}
 .editor-pane.hidden{display:none}
+/* 螢幕外隱藏（保留在 DOM）：Android WebView/TWA 對 display:none 的 file input 選取返回後可能不觸發 change */
+.sr-file{position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px}
 .editor-toolbar{display:flex;align-items:center;gap:2px;padding:6px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .tb{min-width:30px;height:30px;border:none;background:none;border-radius:6px;color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 .tb:hover{background:#F0F3EE;color:var(--ink)}
