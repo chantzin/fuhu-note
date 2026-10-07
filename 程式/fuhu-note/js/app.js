@@ -53,11 +53,22 @@ function visibleNotes() {
     if (state.tag && !(n.tags || []).includes(state.tag)) return false;
     if (state.q) {
       const q = state.q.toLowerCase();
-      const hit = (n.title || '').toLowerCase().includes(q) || (n.contentText || '').toLowerCase().includes(q);
-      if (!hit) return false;
+      const titleHit = (n.title || '').toLowerCase().includes(q);
+      const body = (n.contentText || '').toLowerCase() || htmlToText(n.content).toLowerCase();
+      if (!titleHit && !body.includes(q)) return false;
     }
     return true;
   }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+/* 筆記內容中的待辦進度（已完成/總數）；以 .todo 結構判斷，不依賴 checked 屬性 */
+function todoStatsOf(html) {
+  if (!html) return null;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const todos = div.querySelectorAll('.todo');
+  if (!todos.length) return null;
+  return { done: div.querySelectorAll('.todo.done').length, total: todos.length };
 }
 
 function allTags() {
@@ -134,10 +145,12 @@ function renderList() {
     const active = n.id === state.selectedNoteId;
     const tagCls = (t) => (TAG_PRESETS.topic.includes(t) ? 'theme' : TAG_PRESETS.status.includes(t) ? 'status' : '');
     const tags = (n.tags || []).slice(0, 3).map((t) => `<span class="tag-chip ${tagCls(t)}">${escapeHtml(t)}</span>`).join('');
+    const t = todoStatsOf(n.content);
     return `<div class="note-card ${active ? 'active' : ''}" data-id="${escapeHtml(n.id)}">
       <h3>${escapeHtml(n.title) || '（無標題）'}</h3>
       <p>${escapeHtml(htmlToText(n.content))}</p>
       <div class="card-foot">
+        ${t ? `<span class="todo-stat" title="待辦完成進度">${t.done}/${t.total}</span>` : ''}
         <span>${fmtTime(n.updatedAt)}</span>
         ${n.notebookId ? `<span>${escapeHtml(nbName(n.notebookId))}</span>` : ''}
         <span class="card-tags">${tags}</span>
@@ -537,7 +550,7 @@ function readAsDataURL(file) {
 }
 
 /* =====================================================
- * 備份（匯出 / 匯入）
+ * 備份（匯出 / 匯入）＋ Markdown 匯出
  * ===================================================== */
 function exportBackup() {
   const data = {
@@ -578,6 +591,64 @@ function importBackup(file) {
     }
   };
   r.readAsText(file);
+}
+
+/* ---------- Markdown 匯出 ---------- */
+function htmlToMarkdown(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html || '';
+  div.querySelectorAll('img').forEach((img) => img.replaceWith(`![${img.alt || '附件圖片'}](${img.src})`));
+  div.querySelectorAll('.todo').forEach((t) => {
+    const ck = t.querySelector('input[type="checkbox"]');
+    const txt = t.textContent.trim();
+    t.replaceWith(`${ck && ck.checked ? '[x]' : '[ ]'} ${txt}`);
+  });
+  div.querySelectorAll('a').forEach((a) => a.replaceWith(`[${a.textContent}](${a.href})`));
+  let md = '';
+  div.childNodes.forEach((node) => {
+    if (node.nodeType === 3) { md += node.textContent; return; }
+    const tg = node.tagName;
+    if (tg === 'DIV' || tg === 'P') md += node.textContent.trim() + '\n\n';
+    else if (tg === 'H1') md += '# ' + node.textContent.trim() + '\n\n';
+    else if (tg === 'H2') md += '## ' + node.textContent.trim() + '\n\n';
+    else if (tg === 'H3') md += '### ' + node.textContent.trim() + '\n\n';
+    else if (tg === 'LI') md += '- ' + node.textContent.trim() + '\n';
+    else if (tg === 'HR') md += '---\n\n';
+    else md += node.textContent.trim() + '\n\n';
+  });
+  return md.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function downloadTextFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+function exportNoteMD() {
+  const note = currentNote();
+  if (!note) return;
+  const title = note.title || '未命名筆記';
+  const md = `# ${title}\n\n${htmlToMarkdown(note.content)}\n\n---\n- 標籤：${(note.tags || []).join('、') || '無'}\n- 更新：${new Date(note.updatedAt).toLocaleString('zh-TW')}`;
+  downloadTextFile(`${title}.md`, md);
+  toast('已匯出本則筆記（Markdown）');
+}
+
+function exportAllMD() {
+  const notes = state.notes.filter((n) => !n.trash && !n.deleted);
+  if (!notes.length) { toast('沒有可匯出的筆記', 'err'); return; }
+  const parts = notes.map((n) => {
+    const title = n.title || '未命名筆記';
+    return `# ${title}\n\n${htmlToMarkdown(n.content)}\n\n---\n- 標籤：${(n.tags || []).join('、') || '無'}\n- 更新：${new Date(n.updatedAt).toLocaleString('zh-TW')}`;
+  });
+  const d = new Date();
+  const pad = (x) => String(x).padStart(2, '0');
+  downloadTextFile(`FUHU-NOTE-全部筆記-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.md`, parts.join('\n\n---\n\n'));
+  toast(`已匯出 ${notes.length} 則筆記（Markdown）`);
 }
 
 /* =====================================================
@@ -724,6 +795,17 @@ function wireEvents() {
       toast('已刪除照片');
     }
   });
+  // 編輯器內待辦勾選：打勾/取消即儲存，並切換完成樣式
+  el('editor-content').addEventListener('change', (e) => {
+    if (e.target.matches('.todo input[type="checkbox"]')) {
+      const t = e.target.closest('.todo');
+      if (t) t.classList.toggle('done', e.target.checked);
+      if (e.target.checked) e.target.setAttribute('checked', 'checked');
+      else e.target.removeAttribute('checked');
+      saveCurrentNote();
+      renderList();
+    }
+  });
   el('btn-trash-note').onclick = trashNote;
 
   // 行動版
@@ -748,6 +830,8 @@ function wireEvents() {
   el('btn-export').onclick = exportBackup;
   el('set-export').onclick = exportBackup;
   el('set-import').onclick = () => el('import-file').click();
+  el('cmd-export-md').onclick = exportNoteMD;
+  el('set-export-md').onclick = exportAllMD;
   el('import-file').addEventListener('change', (e) => { importBackup(e.target.files[0]); e.target.value = ''; });
   el('set-clear-local').onclick = () => {
     confirmDialog('清除本機資料', '將刪除本機所有筆記與筆記本（雲端資料不受影響）。確定繼續？', async () => {

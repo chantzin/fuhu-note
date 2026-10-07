@@ -10,10 +10,14 @@ export function escapeHtml(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/* 從 HTML 內容萃取純文字（列表預覽用） */
+/* 從 HTML 內容萃取純文字（列表預覽用）；勾選框轉 [x]/[ ]、圖片轉 [圖片] */
 export function htmlToText(html) {
   const div = document.createElement('div');
   div.innerHTML = html || '';
+  div.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+    c.replaceWith(c.checked ? '[x]' : '[ ]');
+  });
+  div.querySelectorAll('img').forEach((img) => img.replaceWith(img.alt || '[圖片]'));
   return (div.textContent || '').replace(/\s+/g, ' ').trim();
 }
 

@@ -146,6 +146,10 @@
           </button>
           <input type="file" id="image-file" accept="image/*,application/pdf,text/*" class="sr-file">
         </span>
+        <span class="tb-sep"></span>
+        <button class="tb" id="cmd-export-md" title="匯出本則筆記（Markdown）" aria-label="匯出本則筆記">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <span class="tb-spacer"></span>
         <span id="editor-save-state" class="save-state">已儲存</span>
         <button id="btn-trash-note" class="tb danger" title="移到垃圾桶" aria-label="移到垃圾桶">
@@ -190,6 +194,7 @@
           <h3>備份</h3>
           <div class="btn-row">
             <button id="set-export" class="btn ghost">匯出備份（JSON）</button>
+            <button id="set-export-md" class="btn ghost">匯出全部為 Markdown</button>
             <button id="set-import" class="btn ghost">匯入備份</button>
           </div>
           <p class="set-note">建議將備份檔存入 <code>D:\FUHU-NOTE\備份</code> 資料夾。</p>
