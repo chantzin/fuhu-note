@@ -458,24 +458,33 @@ function insertImage(file) {
   };
   if (isCloudMode() && state.user) {
     uploadImage(file).then(done).catch(() => {
-      readAsDataURL(file).then(done);
       toast('雲端上傳失敗，已改用本機圖片', 'err');
+      readAsDataURL(file).then(done).catch(() => toast('插入照片失敗（無法讀取照片）', 'err'));
     });
   } else {
-    readAsDataURL(file).then(done);
+    readAsDataURL(file).then(done).catch(() => toast('插入照片失敗（無法讀取照片）', 'err'));
   }
 }
 
 function readAsDataURL(file) {
   return new Promise((resolve, reject) => {
-    // 圖片先壓縮再轉 dataURL，避免手機大圖（數 MB）造成插入失敗或同步超限
+    // 方法二：原始讀取（不壓縮）——供壓縮路徑失敗時回退
+    const fallbackRaw = () => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error('file-read-failed'));
+      r.readAsDataURL(file);
+    };
+    // 方法一：壓縮（Image＋Canvas）——格式無法解碼（如部分 HEIC）時自動退回方法二
     if (file.type && file.type.startsWith('image/')) {
-      const objUrl = URL.createObjectURL(file);
+      let objUrl;
+      try { objUrl = URL.createObjectURL(file); } catch (e) { fallbackRaw(); return; }
       const img = new Image();
       img.onload = () => {
         try {
           const MAX = 1600;
           let w = img.naturalWidth, h = img.naturalHeight;
+          if (!w || !h) { URL.revokeObjectURL(objUrl); fallbackRaw(); return; }
           if (w > MAX || h > MAX) {
             const s = Math.min(MAX / w, MAX / h);
             w = Math.round(w * s);
@@ -485,26 +494,24 @@ function readAsDataURL(file) {
           c.width = w;
           c.height = h;
           const ctx = c.getContext('2d');
+          if (!ctx) { URL.revokeObjectURL(objUrl); fallbackRaw(); return; }
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
           URL.revokeObjectURL(objUrl);
           resolve(c.toDataURL('image/jpeg', 0.82));
         } catch (e) {
-          URL.revokeObjectURL(objUrl);
-          reject(e);
+          try { URL.revokeObjectURL(objUrl); } catch (e2) {}
+          fallbackRaw();
         }
       };
       img.onerror = () => {
-        URL.revokeObjectURL(objUrl);
-        reject(new Error('image-load-failed'));
+        try { URL.revokeObjectURL(objUrl); } catch (e2) {}
+        fallbackRaw();
       };
       img.src = objUrl;
     } else {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(file);
+      fallbackRaw();
     }
   });
 }
