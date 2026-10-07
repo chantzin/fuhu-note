@@ -422,29 +422,38 @@ function insertImage(file) {
   if (!file) return;
   const done = (url) => {
     const ed = el('editor-content');
-    ed.focus();
+    try { ed.focus(); } catch (e) {}
     // 手機從照片選擇器返回後，focus 為非同步、游標可能不在編輯器內，
     // 先將游標放回編輯器末端再插入，避免 execCommand 靜默失敗。
     const sel = window.getSelection();
     let inEditor = false;
     if (sel && sel.rangeCount) {
-      const r = sel.getRangeAt(0);
-      inEditor = ed.contains(r.commonAncestorContainer);
+      try {
+        const r = sel.getRangeAt(0);
+        inEditor = ed.contains(r.commonAncestorContainer);
+      } catch (e) {}
     }
     if (!inEditor) {
-      const r = document.createRange();
-      r.selectNodeContents(ed);
-      r.collapse(false);
-      if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+      try {
+        const r = document.createRange();
+        r.selectNodeContents(ed);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch (e) {}
     }
     const html = `<img class="fn-img" src="${url}" alt="附件圖片">`;
     const before = ed.querySelectorAll('.fn-img').length;
-    const ok = document.execCommand('insertHTML', false, html);
-    // execCommand 失敗（或未產生圖片）時，直接附加到編輯器末端作為備援
+    let ok = false;
+    try { ok = document.execCommand('insertHTML', false, html); } catch (e) { ok = false; }
+    // execCommand 失敗（或未產生圖片）時，逐步備援：附加至末端 → 直接寫入 innerHTML
     if (!ok || ed.querySelectorAll('.fn-img').length === before) {
-      ed.insertAdjacentHTML('beforeend', `<div>${html}</div>`);
+      try { ed.insertAdjacentHTML('beforeend', `<div>${html}</div>`); } catch (e) {}
     }
-    debounceSave();
+    if (ed.querySelectorAll('.fn-img').length === before) {
+      try { ed.innerHTML = ed.innerHTML + `<div>${html}</div>`; } catch (e) {}
+    }
+    saveCurrentNote();
     toast('已插入照片');
   };
   if (isCloudMode() && state.user) {
@@ -459,10 +468,44 @@ function insertImage(file) {
 
 function readAsDataURL(file) {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
+    // 圖片先壓縮再轉 dataURL，避免手機大圖（數 MB）造成插入失敗或同步超限
+    if (file.type && file.type.startsWith('image/')) {
+      const objUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const MAX = 1600;
+          let w = img.naturalWidth, h = img.naturalHeight;
+          if (w > MAX || h > MAX) {
+            const s = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * s);
+            h = Math.round(h * s);
+          }
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(objUrl);
+          resolve(c.toDataURL('image/jpeg', 0.82));
+        } catch (e) {
+          URL.revokeObjectURL(objUrl);
+          reject(e);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        reject(new Error('image-load-failed'));
+      };
+      img.src = objUrl;
+    } else {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    }
   });
 }
 

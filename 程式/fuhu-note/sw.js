@@ -2,7 +2,7 @@
  * 離線支援：快取應用外殼與 Firebase SDK，斷網仍可開啟與編輯。
  * 部署時請以 HTTPS 或 localhost 提供服務（Service Worker 的要求）。
  */
-const CACHE_NAME = 'fuhu-note-v2';
+const CACHE_NAME = 'fuhu-note-v3';
 const PRECACHE = [
   './',
   './index.html',
@@ -64,14 +64,12 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 同源靜態資源：快取優先
+  // 同源靜態資源：網路優先（更新即時生效），離線時回退快取
   e.respondWith(
-    caches.match(req).then((hit) =>
-      hit || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-        return res;
-      })
-    )
+    fetch(req).then((res) => {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+      return res;
+    }).catch(() => caches.match(req))
   );
 });
