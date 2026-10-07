@@ -421,9 +421,31 @@ function insertLink() {
 function insertImage(file) {
   if (!file) return;
   const done = (url) => {
-    el('editor-content').focus();
-    document.execCommand('insertHTML', false, `<img src="${url}" alt="附件圖片">`);
+    const ed = el('editor-content');
+    ed.focus();
+    // 手機從照片選擇器返回後，focus 為非同步、游標可能不在編輯器內，
+    // 先將游標放回編輯器末端再插入，避免 execCommand 靜默失敗。
+    const sel = window.getSelection();
+    let inEditor = false;
+    if (sel && sel.rangeCount) {
+      const r = sel.getRangeAt(0);
+      inEditor = ed.contains(r.commonAncestorContainer);
+    }
+    if (!inEditor) {
+      const r = document.createRange();
+      r.selectNodeContents(ed);
+      r.collapse(false);
+      if (sel) { sel.removeAllRanges(); sel.addRange(r); }
+    }
+    const html = `<img class="fn-img" src="${url}" alt="附件圖片">`;
+    const before = ed.querySelectorAll('.fn-img').length;
+    const ok = document.execCommand('insertHTML', false, html);
+    // execCommand 失敗（或未產生圖片）時，直接附加到編輯器末端作為備援
+    if (!ok || ed.querySelectorAll('.fn-img').length === before) {
+      ed.insertAdjacentHTML('beforeend', `<div>${html}</div>`);
+    }
     debounceSave();
+    toast('已插入照片');
   };
   if (isCloudMode() && state.user) {
     uploadImage(file).then(done).catch(() => {
