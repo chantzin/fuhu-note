@@ -174,6 +174,15 @@ function renderEditor() {
   if (!state.editorDirty) {
     const content = el('editor-content');
     if (content.innerHTML !== (note.content || '')) content.innerHTML = note.content || '';
+    // 既有筆記中的舊圖片（尚未包刪除鈕）自動補上刪除按鈕
+    content.querySelectorAll('img.fn-img').forEach((img) => {
+      if (img.parentElement && img.parentElement.classList.contains('fn-wrap')) return;
+      const w = document.createElement('span');
+      w.className = 'fn-wrap';
+      w.innerHTML = '<span class="fn-del" role="button" title="刪除圖片">×</span>';
+      img.parentNode.insertBefore(w, img);
+      w.insertBefore(img, w.firstChild);
+    });
   }
   renderTagBar(note);
   state.lastEditorUpdatedAt = note.updatedAt;
@@ -435,13 +444,16 @@ function insertImage(file) {
     // 先將游標放回編輯器末端再插入，避免 execCommand 靜默失敗。
     const sel = window.getSelection();
     let inEditor = false;
+    let caretInWrap = false;
     if (sel && sel.rangeCount) {
       try {
         const r = sel.getRangeAt(0);
         inEditor = ed.contains(r.commonAncestorContainer);
+        caretInWrap = !!(r.commonAncestorContainer.closest && r.commonAncestorContainer.closest('.fn-wrap'));
       } catch (e) {}
     }
-    if (!inEditor) {
+    // 游標不在編輯器內、或游標在圖片包裝內（會造成雙層包裹）時，移到編輯器末端
+    if (!inEditor || caretInWrap) {
       try {
         const r = document.createRange();
         r.selectNodeContents(ed);
@@ -450,7 +462,7 @@ function insertImage(file) {
         sel.addRange(r);
       } catch (e) {}
     }
-    const html = `<img class="fn-img" src="${url}" alt="附件圖片">`;
+    const html = `<span class="fn-wrap"><img class="fn-img" src="${url}" alt="附件圖片"><span class="fn-del" role="button" title="刪除圖片">×</span></span>`;
     const before = ed.querySelectorAll('.fn-img').length;
     let ok = false;
     try { ok = document.execCommand('insertHTML', false, html); } catch (e) { ok = false; }
@@ -692,6 +704,24 @@ function wireEvents() {
         insertImage(f.files[0]);
         f.value = '';
       }
+    }
+  });
+  // 編輯器內圖片刪除（事件委派：內容由使用者編輯、DOM 會重建）
+  el('editor-content').addEventListener('click', (e) => {
+    const del = e.target.closest('.fn-del');
+    if (del) {
+      e.preventDefault();
+      e.stopPropagation();
+      // 移除包裝鏈，並清理因此出現的空白包裝（避免嵌套殘留空殼）
+      let w = del.closest('.fn-wrap');
+      while (w) {
+        const p = w.parentElement;
+        w.remove();
+        if (!p || !p.classList || !p.classList.contains('fn-wrap') || p.querySelector('img.fn-img')) break;
+        w = p;
+      }
+      saveCurrentNote();
+      toast('已刪除照片');
     }
   });
   el('btn-trash-note').onclick = trashNote;
