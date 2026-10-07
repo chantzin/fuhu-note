@@ -420,6 +420,14 @@ function insertLink() {
 
 function insertImage(file) {
   if (!file) return;
+  // 檔案管理員可選非圖片檔（accept 混合型），非圖片予以提示；
+  // 部分來源 file.type 為空，再以副檔名判斷
+  const fname = (file.name || '').toLowerCase();
+  const isImg = file.type ? file.type.startsWith('image/') : /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/.test(fname);
+  if (!isImg) {
+    toast('請選擇圖片檔案', 'err');
+    return;
+  }
   const done = (url) => {
     const ed = el('editor-content');
     try { ed.focus(); } catch (e) {}
@@ -673,7 +681,7 @@ function wireEvents() {
   el('cmd-ol').onclick = () => execCmd('insertOrderedList');
   el('cmd-todo').onclick = insertTodo;
   el('cmd-link').onclick = insertLink;
-  el('cmd-image').onclick = () => el('image-file').click();
+  // 插入圖片：input 直接覆蓋在按鈕上（原生點擊），Android WebView 交付檔案最可靠，不需 JS click()
   el('image-file').addEventListener('change', (e) => { insertImage(e.target.files[0]); e.target.value = ''; });
   // Android Photo Picker / TWA 已知問題：選擇照片返回後 change 可能不觸發。
   // 以「頁面回到前景」補救——若 input 內已有檔案而 change 未處理，此時手動插入。
