@@ -119,6 +119,18 @@ code{font-family:Consolas,Menlo,monospace;font-size:12px;background:#EEF1EC;padd
 .todo input[type="checkbox"]{width:16px;height:16px;margin-top:4px;flex:none;cursor:pointer;accent-color:var(--green)}
 .todo.done span{text-decoration:line-through;color:var(--ink-3)}
 .todo-stat{color:var(--green-2);font-size:12px;background:var(--green-soft);border-radius:10px;padding:0 8px;font-weight:600;display:inline-flex;align-items:center}
+/* 筆記提醒 */
+.remind-chip{color:#9A6B00;font-size:12px;background:#FFF3D6;border-radius:10px;padding:0 8px;display:inline-flex;align-items:center;white-space:nowrap}
+.tb.has-remind{color:var(--green);background:var(--green-soft)}
+.remind-bar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--paper);border-bottom:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+.remind-label{color:var(--ink-2);white-space:nowrap}
+.remind-bar input[type="datetime-local"]{border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--surface);color:var(--ink)}
+.btn.small{padding:4px 10px;font-size:12px;min-height:28px}
+/* 附件（非圖片） */
+.fn-file{display:inline-flex;align-items:center;gap:5px;color:var(--green-2);text-decoration:none;background:var(--green-soft);border:1px solid rgba(15,123,77,.18);border-radius:6px;padding:3px 9px;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.fn-file:hover{background:#dceee3;color:var(--green)}
+/* toast 提醒樣式 */
+.toast.remind{background:#B8860B}
 .editor-toolbar{display:flex;align-items:center;gap:2px;padding:6px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .tb{min-width:30px;height:30px;border:none;background:none;border-radius:6px;color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 .tb:hover{background:#F0F3EE;color:var(--ink)}

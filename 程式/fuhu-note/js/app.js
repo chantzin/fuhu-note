@@ -71,6 +71,13 @@ function todoStatsOf(html) {
   return { done: div.querySelectorAll('.todo.done').length, total: todos.length };
 }
 
+/* 提醒時間顯示（MM/DD HH:mm） */
+function fmtRemind(ts) {
+  const d = new Date(ts);
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function allTags() {
   const map = {};
   state.notes.forEach((n) => (n.tags || []).forEach((t) => { map[t] = (map[t] || 0) + 1; }));
@@ -146,11 +153,13 @@ function renderList() {
     const tagCls = (t) => (TAG_PRESETS.topic.includes(t) ? 'theme' : TAG_PRESETS.status.includes(t) ? 'status' : '');
     const tags = (n.tags || []).slice(0, 3).map((t) => `<span class="tag-chip ${tagCls(t)}">${escapeHtml(t)}</span>`).join('');
     const t = todoStatsOf(n.content);
+    const remind = n.remindAt && !n.trash ? `<span class="remind-chip" title="提醒時間">${fmtRemind(n.remindAt)}</span>` : '';
     return `<div class="note-card ${active ? 'active' : ''}" data-id="${escapeHtml(n.id)}">
       <h3>${escapeHtml(n.title) || '（無標題）'}</h3>
       <p>${escapeHtml(htmlToText(n.content))}</p>
       <div class="card-foot">
         ${t ? `<span class="todo-stat" title="待辦完成進度">${t.done}/${t.total}</span>` : ''}
+        ${remind}
         <span>${fmtTime(n.updatedAt)}</span>
         ${n.notebookId ? `<span>${escapeHtml(nbName(n.notebookId))}</span>` : ''}
         <span class="card-tags">${tags}</span>
@@ -198,6 +207,7 @@ function renderEditor() {
     });
   }
   renderTagBar(note);
+  el('cmd-remind').classList.toggle('has-remind', !!note.remindAt);
   state.lastEditorUpdatedAt = note.updatedAt;
   setSaveState('已儲存');
 }
@@ -314,7 +324,7 @@ async function newNote() {
   const note = {
     id: genUid('nt'), ownerId: getUid(), notebookId: nbId,
     title: '', content: '', contentText: '', tags: [],
-    trash: false, deleted: false,
+    trash: false, deleted: false, remindAt: null, reminded: false,
     createdAt: now, updatedAt: now, version: 1,
     f: { title: now, content: now, notebookId: nbId ? now : 0, tags: now, trash: now }
   };
@@ -652,6 +662,117 @@ function exportAllMD() {
 }
 
 /* =====================================================
+ * 筆記提醒
+ * ===================================================== */
+function toggleRemindBar() {
+  const note = currentNote();
+  if (!note) return;
+  const bar = el('remind-bar');
+  bar.classList.toggle('hidden');
+  if (note.remindAt) {
+    const d = new Date(note.remindAt);
+    const pad = (x) => String(x).padStart(2, '0');
+    el('remind-input').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    el('remind-input').value = '';
+  }
+  if (!bar.classList.contains('hidden') && Notification && typeof Notification.requestPermission === 'function') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+function setReminder() {
+  const note = currentNote();
+  const v = el('remind-input').value;
+  if (!note || !v) { toast('請選擇提醒時間', 'err'); return; }
+  const ts = new Date(v).getTime();
+  touchField(note, 'remindAt');
+  note.remindAt = ts;
+  note.reminded = false;
+  persistNote(note);
+  enqueue({ coll: 'notes', action: 'upsert', data: note });
+  cloudUpsert('notes', note);
+  el('cmd-remind').classList.add('has-remind');
+  el('remind-bar').classList.add('hidden');
+  renderList();
+  toast('提醒已設定');
+}
+
+function clearReminder() {
+  const note = currentNote();
+  if (!note) return;
+  touchField(note, 'remindAt');
+  note.remindAt = null;
+  note.reminded = false;
+  persistNote(note);
+  enqueue({ coll: 'notes', action: 'upsert', data: note });
+  cloudUpsert('notes', note);
+  el('cmd-remind').classList.remove('has-remind');
+  el('remind-bar').classList.add('hidden');
+  renderList();
+  toast('提醒已清除');
+}
+
+/* 每分鐘檢查到期提醒（App 開啟時生效；背景請開啟通知權限） */
+function checkReminders() {
+  const now = Date.now();
+  state.notes.forEach((n) => {
+    if (!n.trash && !n.deleted && n.remindAt && n.remindAt <= now && !n.reminded) {
+      n.reminded = true;
+      persistNote(n);
+      enqueue({ coll: 'notes', action: 'upsert', data: n });
+      cloudUpsert('notes', n);
+      const title = n.title || '未命名筆記';
+      toast(`提醒：${title}`, 'remind');
+      try {
+        if (Notification && Notification.permission === 'granted') {
+          if (navigator.serviceWorker) {
+            navigator.serviceWorker.ready.then((reg) => reg.showNotification('FUHU-NOTE 提醒', { body: title, icon: 'icons/icon-192.png' })).catch(() => {});
+          } else {
+            new Notification('FUHU-NOTE 提醒', { body: title, icon: 'icons/icon-192.png' });
+          }
+        }
+      } catch (e) {}
+    }
+  });
+}
+
+/* =====================================================
+ * 附件（非圖片檔案，雲端 Storage）
+ * ===================================================== */
+function insertAttachment(file) {
+  if (!file) return;
+  if (!state.user) { toast('請先登入 Google 帳號才能上傳附件', 'err'); return; }
+  if (file.size > 50 * 1024 * 1024) { toast('附件上限 50MB', 'err'); return; }
+  toast('附件上傳中…');
+  uploadImage(file).then((url) => {
+    const name = escapeHtml(file.name);
+    const html = `<span class="fn-wrap"><a class="fn-file" href="${url}" target="_blank" rel="noopener">📎 ${name}</a><span class="fn-del" role="button" title="刪除附件">×</span></span>`;
+    const ed = el('editor-content');
+    const sel = window.getSelection();
+    let inEditor = false;
+    if (sel && sel.rangeCount) {
+      try { inEditor = ed.contains(sel.getRangeAt(0).commonAncestorContainer); } catch (e) {}
+    }
+    try {
+      ed.focus();
+      if (!inEditor) {
+        const r = document.createRange();
+        r.selectNodeContents(ed);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+      if (!document.execCommand('insertHTML', false, html)) ed.insertAdjacentHTML('beforeend', html);
+    } catch (e) {
+      ed.insertAdjacentHTML('beforeend', html);
+    }
+    saveCurrentNote();
+    toast('已插入附件');
+  }).catch(() => toast('附件上傳失敗（請確認已登入）', 'err'));
+}
+
+/* =====================================================
  * 使用者與同步狀態
  * ===================================================== */
 function renderUserBox() {
@@ -832,6 +953,13 @@ function wireEvents() {
   el('set-import').onclick = () => el('import-file').click();
   el('cmd-export-md').onclick = exportNoteMD;
   el('set-export-md').onclick = exportAllMD;
+  // 筆記提醒
+  el('cmd-remind').onclick = toggleRemindBar;
+  el('remind-save').onclick = setReminder;
+  el('remind-clear').onclick = clearReminder;
+  // 附件（input 覆蓋按鈕，同圖片機制）
+  el('attach-file').addEventListener('change', (e) => { insertAttachment(e.target.files[0]); e.target.value = ''; });
+  setInterval(checkReminders, 60000);
   el('import-file').addEventListener('change', (e) => { importBackup(e.target.files[0]); e.target.value = ''; });
   el('set-clear-local').onclick = () => {
     confirmDialog('清除本機資料', '將刪除本機所有筆記與筆記本（雲端資料不受影響）。確定繼續？', async () => {
