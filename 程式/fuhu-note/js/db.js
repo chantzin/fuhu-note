@@ -67,6 +67,11 @@ async function removeQueue(id) { await dbDel('queue', id); }
 const clearQueue = () => dbClear('queue');
 
 /* ---------- 初次使用的歡迎筆記 ---------- */
+/* 預設標籤體系：主題（這是什麼）＋狀態（怎麼處理）；每則筆記建議 1 主題＋0~2 狀態 */
+const TAG_PRESETS = {
+  topic: ['工作', '家庭', '理財', '學習', '健康', '旅遊'],
+  status: ['待辦', '重要', '參考', '靈感']
+};
 async function ensureFirstRun(uid) {
   const done = await metaGet('firstRun');
   if (done) return;
@@ -78,7 +83,7 @@ async function ensureFirstRun(uid) {
     title: '歡迎使用 FUHU-NOTE',
     content: '<h3>這是一則歡迎筆記</h3><p>FUHU-NOTE 是類似 Evernote 的筆記工具：</p><ul><li><b>離線優先</b>——斷網也能完整編輯，恢復連線自動同步</li><li><b>Google 帳號登入</b>——手機與電腦登入同一帳號即同步（需完成 Firebase 設定）</li><li><b>筆記本＋標籤＋搜尋＋垃圾桶</b>——完整的分類與管理</li></ul><p>刪掉這則筆記即可開始使用。</p>',
     contentText: '歡迎使用 FUHU-NOTE 這是一則歡迎筆記 FUHU-NOTE 是類似 Evernote 的筆記工具 離線優先 斷網也能完整編輯 恢復連線自動同步 Google 帳號登入 手機與電腦登入同一帳號即同步 需完成 Firebase 設定 筆記本 標籤 搜尋 垃圾桶 完整的分類與管理 刪掉這則筆記即可開始使用',
-    tags: ['歡迎'], trash: false, deleted: false,
+    tags: [], trash: false, deleted: false,
     createdAt: now, updatedAt: now,
     f: { title: now, content: now, notebookId: now, tags: now, trash: now }
   };
@@ -88,7 +93,7 @@ async function ensureFirstRun(uid) {
 
 export {
   openDb, dbGetAll, dbGet, dbPut, dbDel, dbClear,
-  metaGet, metaSet, genUid,
+  metaGet, metaSet, genUid, TAG_PRESETS,
   loadNotebooks, saveNotebookLocal, deleteNotebookLocal,
   loadNotes, saveNoteLocal, deleteNoteLocal,
   enqueue, loadQueue, removeQueue, clearQueue,

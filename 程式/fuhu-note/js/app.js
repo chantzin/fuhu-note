@@ -5,7 +5,7 @@
 import {
   genUid, loadNotebooks, saveNotebookLocal, deleteNotebookLocal,
   loadNotes, saveNoteLocal, deleteNoteLocal,
-  enqueue, ensureFirstRun, openDb, metaSet
+  enqueue, ensureFirstRun, openDb, metaSet, TAG_PRESETS
 } from './db.js';
 import {
   initSync, login, logout, getUid, isCloudMode, uploadImage, cloudUpsert, cloudDelete,
@@ -100,14 +100,26 @@ function renderSidebar() {
     </div>`;
   }).join('') || '<div class="side-item" style="color:var(--ink-3)">尚無筆記本</div>';
 
-  const tags = allTags();
-  el('tag-list').innerHTML = tags.map((t) => {
-    const active = state.tag === t.name;
-    return `<button class="side-item ${active ? 'active' : ''}" data-tag="${escapeHtml(t.name)}">
-      <svg viewBox="0 0 24 24" width="14" height="14" style="flex:none"><path d="M4 5h7l9 9-7 7-9-9V5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-      <span class="tag-chip">${escapeHtml(t.name)}</span><span class="count">${t.count}</span>
-    </button>`;
-  }).join('') || '<div class="side-item" style="color:var(--ink-3)">尚無標籤</div>';
+  const usageArr = allTags();
+  const usageMap = {};
+  usageArr.forEach((u) => { usageMap[u.name] = u.count; });
+  const groupDefs = [
+    { key: 'topic', label: '主題' },
+    { key: 'status', label: '狀態' }
+  ];
+  const extraTags = usageArr.filter((u) => !TAG_PRESETS.topic.includes(u.name) && !TAG_PRESETS.status.includes(u.name)).map((u) => u.name);
+  if (extraTags.length) groupDefs.push({ key: 'extra', label: '其他' });
+  el('tag-list').innerHTML = groupDefs.map((g) => {
+    const names = g.key === 'extra' ? extraTags : TAG_PRESETS[g.key];
+    const items = names.map((name) => {
+      const count = usageMap[name] || 0;
+      const active = state.tag === name;
+      return `<button class="side-item ${active ? 'active' : ''}" data-tag="${escapeHtml(name)}">
+        <span class="tag-chip ${g.key === 'extra' ? '' : g.key}">${escapeHtml(name)}</span><span class="count ${count ? '' : 'zero'}">${count}</span>
+      </button>`;
+    }).join('');
+    return `<div class="side-tag-group"><div class="side-tag-head">${g.label}</div>${items}</div>`;
+  }).join('');
 
   // 標題
   if (state.view === 'trash') el('view-title').textContent = '垃圾桶';
@@ -120,7 +132,8 @@ function renderList() {
   const notes = visibleNotes();
   el('note-list').innerHTML = notes.map((n) => {
     const active = n.id === state.selectedNoteId;
-    const tags = (n.tags || []).slice(0, 3).map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('');
+    const tagCls = (t) => (TAG_PRESETS.topic.includes(t) ? 'theme' : TAG_PRESETS.status.includes(t) ? 'status' : '');
+    const tags = (n.tags || []).slice(0, 3).map((t) => `<span class="tag-chip ${tagCls(t)}">${escapeHtml(t)}</span>`).join('');
     return `<div class="note-card ${active ? 'active' : ''}" data-id="${escapeHtml(n.id)}">
       <h3>${escapeHtml(n.title) || '（無標題）'}</h3>
       <p>${escapeHtml(htmlToText(n.content))}</p>
@@ -173,10 +186,15 @@ function renderTagBar(note) {
     `<span class="tag-ed">${escapeHtml(t)}<button data-op="rmtag" data-tag="${escapeHtml(t)}" title="移除標籤">×</button></span>`
   ).join('');
   bar.innerHTML = tags +
-    `<span class="tag-input-wrap hidden">
-       <input id="tag-input" type="text" placeholder="標籤名稱" maxlength="30">
+    `<span id="tag-input-wrap" class="tag-input-wrap hidden">
+       <input id="tag-input" type="text" list="tag-suggest" placeholder="標籤名稱" maxlength="30">
      </span>
      <button id="tag-add-btn" class="tag-add">＋ 標籤</button>`;
+  // 標籤輸入自動補全（既有＋預設）
+  let dl = el('tag-suggest');
+  if (!dl) { dl = document.createElement('datalist'); dl.id = 'tag-suggest'; document.body.appendChild(dl); }
+  const suggest = [...new Set([...TAG_PRESETS.topic, ...TAG_PRESETS.status, ...allTags().map((u) => u.name)])];
+  dl.innerHTML = suggest.map((t) => `<option value="${escapeHtml(t)}">`).join('');
   const addBtn = el('tag-add-btn');
   addBtn.onclick = () => {
     el('tag-input-wrap').classList.remove('hidden');
