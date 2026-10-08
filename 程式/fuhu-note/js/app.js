@@ -1028,6 +1028,42 @@ function handleClipHash() {
   } catch (e) { console.error('剪藏參數解析失敗：', e); }
 }
 
+/* 處理手機「分享」進入（PWA share_target）：把網頁標題＋網址＋文字存成筆記（加「參考」標籤） */
+function handleShare() {
+  try {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('share') !== '1') return;
+    const url = (qs.get('share_url') || '').trim();
+    const title = (qs.get('share_title') || '').trim();
+    const text = (qs.get('share_text') || '').trim();
+    if (!url && !title && !text) return;
+    const now = Date.now();
+    const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title || url)}</a>` : '';
+    const quote = text ? `<blockquote>${escapeHtml(text)}</blockquote>` : '';
+    const note = {
+      id: genUid('nt'), ownerId: getUid(), notebookId: null,
+      title: title || url || '分享剪藏',
+      content: `<p>${link}</p>${quote}`,
+      contentText: htmlToText(`<p>${link}</p>${quote}`).toLowerCase(),
+      tags: ['參考'], trash: false, deleted: false, remindAt: null, reminded: false,
+      createdAt: now, updatedAt: now, version: 1, pinned: false,
+      f: { title: now, content: now, tags: now, trash: now, createdAt: now, updatedAt: now }
+    };
+    state.notes.push(note);
+    saveNoteLocal(note).then(() => {
+      enqueue({ coll: 'notes', action: 'upsert', data: note });
+      cloudUpsert('notes', note);
+      state.view = 'all'; state.notebookId = null; state.tag = null; state.q = '';
+      el('search-input').value = '';
+      el('home-search').value = '';
+      state.selectedNoteId = note.id;
+      renderAll();
+      toast('已將分享內容存為筆記');
+    });
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+  } catch (e) { console.error('分享參數解析失敗：', e); }
+}
+
 /* =====================================================
  * 附件總覽
  * ===================================================== */
@@ -1286,6 +1322,14 @@ function wireEvents() {
   el('home-att').onclick = listAttachments;
   el('home-theme').onclick = toggleTheme;
   el('home-settings').onclick = openSettings;
+  el('home-clip').onclick = () => {
+    openSettings();
+    setTimeout(() => {
+      const ta = el('clip-code');
+      if (ta) ta.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (el('clip-code')) el('clip-code').focus();
+    }, 80);
+  };
 
   // 側欄委派（筆記本、標籤）
   el('notebook-list').addEventListener('click', (e) => {
@@ -1462,8 +1506,9 @@ async function init() {
   setSyncStatusUI(getStatus());
   state.user = getUser();
   renderUserBox();
-  // Web 剪藏：#clip 網址參數（bookmarklet 開啟後建立筆記）
+  // Web 剪藏：#clip 網址參數（bookmarklet 開啟後建立筆記）＋手機分享（share_target）
   handleClipHash();
+  handleShare();
 }
 
 init();
