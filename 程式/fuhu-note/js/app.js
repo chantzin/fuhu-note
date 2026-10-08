@@ -5,7 +5,7 @@
 import {
   genUid, loadNotebooks, saveNotebookLocal, deleteNotebookLocal,
   loadNotes, saveNoteLocal, deleteNoteLocal,
-  enqueue, ensureFirstRun, openDb, metaSet, TAG_PRESETS
+  enqueue, ensureFirstRun, openDb, metaGet, metaSet, TAG_PRESETS
 } from './db.js';
 import {
   initSync, login, logout, getUid, isCloudMode, uploadImage, cloudUpsert, cloudDelete,
@@ -24,6 +24,7 @@ const state = {
   notebookId: null,       // null = 全部
   tag: null,
   q: '',
+  nbSort: 'order',        // 筆記本排序：order | name | recent
   syncStatus: isCloudMode() ? 'logged-out' : 'local',
   editorDirty: false,
   lastEditorUpdatedAt: 0,
@@ -58,7 +59,19 @@ function visibleNotes() {
       if (!titleHit && !body.includes(q)) return false;
     }
     return true;
-  }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }).sort((a, b) => {
+    const pa = a.pinned ? 1 : 0, pb = b.pinned ? 1 : 0;
+    if (pa !== pb) return pb - pa;          // 釘選優先置頂
+    return (b.updatedAt || 0) - (a.updatedAt || 0);
+  });
+}
+
+/* 筆記本依使用者設定排序：order（自訂）／name（名稱）／recent（最近更新） */
+function sortedNotebooks() {
+  const arr = [...state.notebooks].filter((n) => !n.deleted);
+  if (state.nbSort === 'name') return arr.sort((a, b) => (String(a.name) < String(b.name) ? -1 : String(a.name) > String(b.name) ? 1 : 0));
+  if (state.nbSort === 'recent') return arr.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  return arr.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 
 /* 筆記內容中的待辦進度（已完成/總數）；以 .todo 結構判斷，不依賴 checked 屬性 */
@@ -104,7 +117,7 @@ function renderSidebar() {
   el('nav-all').classList.toggle('active', state.view === 'all' && !state.notebookId && !state.tag);
   el('nav-trash').classList.toggle('active', state.view === 'trash');
 
-  const nbs = [...state.notebooks].filter((n) => !n.deleted).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  const nbs = sortedNotebooks();
   el('notebook-list').innerHTML = nbs.map((nb) => {
     const c = state.notes.filter((n) => n.notebookId === nb.id && !n.trash && !n.deleted).length;
     const active = state.notebookId === nb.id;
@@ -158,6 +171,7 @@ function renderList() {
       <h3>${escapeHtml(n.title) || '（無標題）'}</h3>
       <p>${escapeHtml(htmlToText(n.content))}</p>
       <div class="card-foot">
+        ${n.pinned ? '<span class="pin-flag" title="已置頂"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5ZM12 14v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : ''}
         ${t ? `<span class="todo-stat" title="待辦完成進度">${t.done}/${t.total}</span>` : ''}
         ${remind}
         <span>${fmtTime(n.updatedAt)}</span>
@@ -208,8 +222,18 @@ function renderEditor() {
   }
   renderTagBar(note);
   el('cmd-remind').classList.toggle('has-remind', !!note.remindAt);
+  el('cmd-pin').classList.toggle('pinned', !!note.pinned);
+  updateWordCount();
   state.lastEditorUpdatedAt = note.updatedAt;
   setSaveState('已儲存');
+}
+
+/* 字數統計（中文字元數＋約略閱讀分鐘） */
+function updateWordCount() {
+  const wc = el('editor-wc');
+  if (!wc) return;
+  const len = htmlToText(el('editor-content').innerHTML).length;
+  wc.textContent = len ? `${len} 字・約 ${Math.max(1, Math.round(len / 400))} 分` : '';
 }
 
 function renderTagBar(note) {
@@ -307,6 +331,7 @@ function setSaveState(text) { el('editor-save-state').textContent = text; }
 function debounceSave() {
   state.editorDirty = true;
   setSaveState('儲存中…');
+  updateWordCount();
   clearTimeout(state.saveTimer);
   state.saveTimer = setTimeout(saveCurrentNote, DEBOUNCE_MS);
 }
@@ -450,6 +475,100 @@ function insertLink() {
   if (url) { execCmd('createLink', url); toast('已插入連結'); }
 }
 
+/* 插入目前日期時間（YYYY/MM/DD HH:mm） */
+function insertDate() {
+  el('editor-content').focus();
+  const d = new Date();
+  const pad = (x) => String(x).padStart(2, '0');
+  const s = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  if (!document.execCommand('insertText', false, s)) {
+    try { document.execCommand('insertHTML', false, s); } catch (e) {}
+  }
+  debounceSave();
+  toast('已插入日期時間');
+}
+
+/* 複製目前筆記（新筆記本相同、標籤相同、內容相同；不複製提醒） */
+function duplicateNote() {
+  const src = currentNote();
+  if (!src) return;
+  const now = Date.now();
+  const copy = {
+    ...src,
+    id: genUid('nt'),
+    title: (src.title || '未命名筆記') + '（複製）',
+    createdAt: now, updatedAt: now, version: 1,
+    pinned: false, remindAt: null, reminded: false,
+    f: { ...(src.f || {}), title: now, content: now, createdAt: now, updatedAt: now, trash: now, pinned: now, remindAt: now }
+  };
+  state.notes.push(copy);
+  saveNoteLocal(copy).then(() => {
+    enqueue({ coll: 'notes', action: 'upsert', data: copy });
+    cloudUpsert('notes', copy);
+    state.selectedNoteId = copy.id;
+    state.view = 'all'; state.notebookId = copy.notebookId; state.tag = null;
+    renderAll();
+    toast('已複製筆記');
+  });
+}
+
+/* 釘選／取消釘選（置頂） */
+function togglePin() {
+  const note = currentNote();
+  if (!note) return;
+  touchField(note, 'pinned');
+  note.pinned = !note.pinned;
+  persistNote(note);
+  el('cmd-pin').classList.toggle('pinned', !!note.pinned);
+  toast(note.pinned ? '已釘選（置頂）' : '已取消釘選');
+}
+
+/* 匯出本則筆記為 PDF：隱藏 iframe 載入乾淨版面 → 系統列印（可選「另存為 PDF」）。
+ * 無外部依賴、不需彈出視窗權限，行動版與桌面版皆可用。 */
+function exportPDF() {
+  const note = currentNote();
+  if (!note) return;
+  const title = note.title || '未命名筆記';
+  const tags = (note.tags || []).map(escapeHtml).join('、') || '無';
+  const updated = new Date(note.updatedAt).toLocaleString('zh-TW');
+  const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">
+<title>${escapeHtml(title)}</title>
+<style>
+body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;max-width:720px;margin:32px auto;padding:0 24px;color:#26302B;line-height:1.85;font-size:15px}
+h1{font-size:24px;border-bottom:2px solid #0F7B4D;padding-bottom:10px}
+.meta{color:#5A6B61;font-size:13px;margin:14px 0 22px}
+img{max-width:100%;border-radius:6px}
+a{color:#0F7B4D}
+.todo{display:flex;gap:7px;align-items:flex-start;margin:2px 0}
+.todo.done span{color:#93A29A;text-decoration:line-through}
+blockquote{border-left:3px solid #14945F;padding-left:10px;color:#5A6B61;margin:8px 0}
+h2{font-size:18px}h3{font-size:16px}
+@media print{body{margin:0}}
+</style></head>
+<body>
+<h1>${escapeHtml(title)}</h1>
+<div class="meta">標籤：${tags}　|　更新：${updated}</div>
+<div>${note.content || '<p>（空白筆記）</p>'}</div>
+</body></html>`;
+  const fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;left:-9999px;top:0;width:760px;height:600px;border:0;z-index:-1';
+  fr.setAttribute('title', '列印預覽');
+  fr.srcdoc = html;
+  document.body.appendChild(fr);
+  toast('已開啟列印視窗，請選擇「另存為 PDF」');
+  fr.onload = () => {
+    setTimeout(() => {
+      try {
+        fr.contentWindow.focus();
+        fr.contentWindow.print();
+      } catch (e) {
+        toast('PDF 匯出失敗：' + (e.message || '無法開啟列印視窗'), 'err');
+      }
+      setTimeout(() => fr.remove(), 3000);
+    }, 400);
+  };
+}
+
 function insertImage(file) {
   if (!file) return;
   // 檔案管理員可選非圖片檔（accept 混合型），非圖片予以提示；
@@ -564,7 +683,7 @@ function readAsDataURL(file) {
  * ===================================================== */
 function exportBackup() {
   const data = {
-    app: 'FUHU-NOTE', version: '1.2',
+    app: 'FUHU-NOTE', version: '1.4',
     exportedAt: new Date().toISOString(),
     notebooks: state.notebooks.filter((n) => !n.deleted),
     notes: state.notes.filter((n) => !n.deleted)
@@ -833,6 +952,146 @@ function exportAllMD() {
   const pad = (x) => String(x).padStart(2, '0');
   downloadTextFile(`FUHU-NOTE-全部筆記-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.md`, parts.join('\n\n---\n\n'));
   toast(`已匯出 ${notes.length} 則筆記（Markdown）`);
+}
+
+/* =====================================================
+ * 深色模式
+ * ===================================================== */
+function applyTheme(dark) {
+  document.documentElement.dataset.theme = dark ? 'dark' : '';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? '#141A16' : '#0F7B4D');
+  const btn = el('set-theme');
+  if (btn) btn.textContent = dark ? '切換淺色模式' : '切換深色模式';
+  try { localStorage.setItem('fuhu_theme', dark ? 'dark' : 'light'); } catch (e) {}
+}
+
+function toggleTheme() {
+  applyTheme(!(document.documentElement.dataset.theme === 'dark'));
+  toast('外觀已切換');
+}
+
+/* =====================================================
+ * Web 剪藏（bookmarklet）：瀏覽器書籤 → #clip?url=…&title=…&sel=…
+ * ===================================================== */
+const CLIP_BOOKMARKLET = "javascript:(function(){var u=location.href,t=document.title||'',s='';try{s=window.getSelection?window.getSelection().toString():''}catch(e){}window.open('https://fuhu-note.web.app/#clip?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(t)+'&sel='+encodeURIComponent(s));})();";
+
+function fillClipCode() {
+  const ta = el('clip-code');
+  if (ta) ta.value = CLIP_BOOKMARKLET;
+}
+
+function copyClipCode() {
+  const ta = el('clip-code');
+  if (!ta) return;
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(() => toast('剪藏程式碼已複製')).catch(() => { document.execCommand('copy'); toast('剪藏程式碼已複製'); });
+    } else { document.execCommand('copy'); toast('剪藏程式碼已複製'); }
+  } catch (e) { toast('複製失敗，請手動選取複製', 'err'); }
+}
+
+/* 處理 #clip 網址參數：建立「剪藏網頁」筆記（加入「參考」標籤） */
+function handleClipHash() {
+  if (!location.hash || location.hash.indexOf('#clip') !== 0) return;
+  try {
+    const qs = new URLSearchParams(location.hash.slice(5));
+    const url = (qs.get('url') || '').trim();
+    const title = (qs.get('title') || '').trim();
+    const sel = (qs.get('sel') || '').trim();
+    if (!url && !title && !sel) return;
+    const now = Date.now();
+    const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title || url)}</a>` : '';
+    const quote = sel ? `<blockquote>${escapeHtml(sel)}</blockquote>` : '';
+    const note = {
+      id: genUid('nt'), ownerId: getUid(), notebookId: null,
+      title: title || url || '剪藏網頁',
+      content: `<p>${link}</p>${quote}`,
+      contentText: htmlToText(`<p>${link}</p>${quote}`).toLowerCase(),
+      tags: ['參考'], trash: false, deleted: false, remindAt: null, reminded: false,
+      createdAt: now, updatedAt: now, version: 1, pinned: false,
+      f: { title: now, content: now, tags: now, trash: now, createdAt: now, updatedAt: now }
+    };
+    state.notes.push(note);
+    saveNoteLocal(note).then(() => {
+      enqueue({ coll: 'notes', action: 'upsert', data: note });
+      cloudUpsert('notes', note);
+      state.view = 'all'; state.notebookId = null; state.tag = null; state.q = '';
+      el('search-input').value = '';
+      state.selectedNoteId = note.id;
+      renderAll();
+      toast('已剪藏網頁為筆記');
+    });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  } catch (e) { console.error('剪藏參數解析失敗：', e); }
+}
+
+/* =====================================================
+ * 附件總覽
+ * ===================================================== */
+function listAttachments() {
+  const items = [];
+  state.notes.forEach((n) => {
+    if (n.trash || n.deleted || !n.content) return;
+    const div = document.createElement('div');
+    div.innerHTML = n.content;
+    div.querySelectorAll('.fn-img').forEach((img) => {
+      items.push({ kind: 'img', name: img.alt || '圖片', src: img.src, noteId: n.id, noteTitle: n.title });
+    });
+    div.querySelectorAll('.fn-file').forEach((a) => {
+      items.push({ kind: 'file', name: (a.textContent || '附件').trim(), src: a.href, noteId: n.id, noteTitle: n.title });
+    });
+  });
+  if (!items.length) {
+    openModal({ title: '附件總覽', body: '<p class="att-empty">目前沒有圖片或檔案附件。</p>', okText: '關閉', cancelable: false });
+    return;
+  }
+  const body = `<div class="att-list">${items.map((it, i) => {
+    const thumb = it.kind === 'img'
+      ? `<img class="att-thumb" src="${it.src}" alt="">`
+      : `<span class="att-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--ink-3)"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 1 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95l-9.2 9.19a1.5 1.5 0 0 1-2.12-2.12l8.49-8.48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    return `<button class="att-item" data-note="${escapeHtml(it.noteId)}" data-i="${i}">${thumb}<span class="att-name">${escapeHtml(it.name)}</span><span class="att-meta">${escapeHtml(it.noteTitle || '未命名筆記')}</span></button>`;
+  }).join('')}</div>`;
+  openModal({
+    title: `附件總覽（${items.length}）`,
+    body,
+    okText: '關閉',
+    cancelable: false,
+    wide: true,
+    onOpen: () => {
+      el('modal-body').querySelectorAll('[data-note]').forEach((btn) => {
+        btn.onclick = () => {
+          el('modal-root').classList.add('hidden');
+          const id = btn.dataset.note;
+          if (state.notes.some((n) => n.id === id)) {
+            state.view = 'all'; state.notebookId = null; state.tag = null;
+            selectNote(id);
+          }
+        };
+      });
+    }
+  });
+}
+
+/* =====================================================
+ * 筆記本排序設定（meta 本機記憶）
+ * ===================================================== */
+async function loadNbSort() {
+  try {
+    const v = await metaGet('nbSort');
+    state.nbSort = (['order', 'name', 'recent'].includes(v)) ? v : 'order';
+  } catch (e) { state.nbSort = 'order'; }
+  const sel = el('set-nb-sort');
+  if (sel) sel.value = state.nbSort;
+}
+
+function setNbSort(mode) {
+  state.nbSort = mode;
+  metaSet('nbSort', mode);
+  renderSidebar();
+  toast('筆記本排序已更新');
 }
 
 /* =====================================================
@@ -1127,6 +1386,20 @@ function wireEvents() {
   el('set-import').onclick = () => el('import-file').click();
   el('cmd-export-md').onclick = exportNoteMD;
   el('set-export-md').onclick = exportAllMD;
+  // v1.4：插入日期時間／匯出 PDF／複製筆記／釘選
+  el('cmd-date').onclick = insertDate;
+  el('cmd-pdf').onclick = exportPDF;
+  el('cmd-copy-note').onclick = duplicateNote;
+  el('cmd-pin').onclick = togglePin;
+  // 深色模式
+  el('set-theme').onclick = toggleTheme;
+  // 筆記本排序
+  el('set-nb-sort').addEventListener('change', (e) => setNbSort(e.target.value));
+  // 附件總覽
+  el('set-attachments').onclick = listAttachments;
+  // Web 剪藏
+  fillClipCode();
+  el('clip-copy').onclick = copyClipCode;
   // 筆記提醒
   el('cmd-remind').onclick = toggleRemindBar;
   el('remind-save').onclick = setReminder;
@@ -1165,12 +1438,19 @@ async function init() {
   setUserCallback((user) => { state.user = user; renderUserBox(); renderList(); renderSidebar(); });
   await openDb();
   await loadData();
+  await loadNbSort();
   renderAll();
   wireEvents();
+  // 外觀：套用上次的深色／淺色設定（localStorage）
+  let savedTheme = '';
+  try { savedTheme = localStorage.getItem('fuhu_theme') || ''; } catch (e) {}
+  applyTheme(savedTheme === 'dark');
   await initSync();
   setSyncStatusUI(getStatus());
   state.user = getUser();
   renderUserBox();
+  // Web 剪藏：#clip 網址參數（bookmarklet 開啟後建立筆記）
+  handleClipHash();
 }
 
 init();

@@ -159,7 +159,20 @@
         <button class="tb" id="cmd-export-md" title="匯出本則筆記（Markdown）" aria-label="匯出本則筆記">
           <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <button class="tb" id="cmd-date" title="插入目前日期時間" aria-label="插入日期時間">
+          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb" id="cmd-pdf" title="匯出本則筆記（PDF）" aria-label="匯出 PDF">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb" id="cmd-copy-note" title="複製本則筆記" aria-label="複製筆記">
+          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 15V5a2 2 0 0 1 2-2h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb" id="cmd-pin" title="釘選／取消釘選（置頂）" aria-label="釘選筆記">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5ZM12 14v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <span class="tb-spacer"></span>
+        <span id="editor-wc" class="save-state"></span>
         <span id="editor-save-state" class="save-state">已儲存</span>
         <button id="btn-trash-note" class="tb danger" title="移到垃圾桶" aria-label="移到垃圾桶">
           <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 7h16M9 7V5h6v2M6 7l1 12h10l1-12M10 11v5M14 11v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -216,6 +229,39 @@
           匯入支援：<b>FUHU-NOTE 備份（.json）</b>／<b>Joplin 匯出（.md，可選多檔）</b>／<b>Evernote 匯出（.enex）</b>。<br>
           Joplin：匯出時選「Markdown 資料夾」；Evernote：匯出時選「.enex」。</p>
         </section>
+        <section class="set-sec">
+          <h3>外觀</h3>
+          <div class="btn-row">
+            <button id="set-theme" class="btn ghost">切換深色模式</button>
+          </div>
+          <p class="set-note">深色模式會在夜間或暗處使用時減輕眼睛負擔。</p>
+        </section>
+        <section class="set-sec">
+          <h3>筆記本排序</h3>
+          <select id="set-nb-sort" class="set-select">
+            <option value="order">自訂順序（建立先後）</option>
+            <option value="name">名稱 A→Z</option>
+            <option value="recent">最近更新</option>
+          </select>
+          <p class="set-note">設定側邊欄「筆記本」區的排列方式。</p>
+        </section>
+        <section class="set-sec">
+          <h3>附件</h3>
+          <div class="btn-row">
+            <button id="set-attachments" class="btn ghost">附件總覽</button>
+          </div>
+          <p class="set-note">列出所有筆記中的圖片與檔案附件，方便查找與整理。</p>
+        </section>
+        <section class="set-sec">
+          <h3>Web 剪藏</h3>
+          <p class="set-note">在電腦瀏覽器把網頁存成筆記：<br>
+          1. 將下面整段文字加入書籤列（書籤管理員 → 新增書籤 → 名稱「剪藏到 FUHU-NOTE」、網址貼上此段）；<br>
+          2. 瀏覽任何網頁時，點這個書籤，就會把網頁標題、網址與選取文字存入 FUHU-NOTE。</p>
+          <textarea id="clip-code" class="clip-code" readonly spellcheck="false"></textarea>
+          <div class="btn-row">
+            <button id="clip-copy" class="btn ghost">複製剪藏程式碼</button>
+          </div>
+        </section>
         <section class="set-sec danger-sec">
           <h3>本機資料</h3>
           <button id="set-clear-local" class="btn danger">清除本機所有資料</button>
@@ -223,7 +269,7 @@
         </section>
         <section class="set-sec">
           <h3>關於</h3>
-          <p class="set-note">FUHU-NOTE 筆記 v1.2（MVP）· 離線優先 · Google 帳號同步<br>詳細文件請見 <code>D:\FUHU-NOTE\文件</code></p>
+          <p class="set-note">FUHU-NOTE 筆記 v1.4.0 · 離線優先 · Google 帳號同步<br>詳細文件請見 <code>D:\FUHU-NOTE\文件</code></p>
         </section>
       </div>
       <div class="modal-actions">

@@ -34,7 +34,7 @@ const state = {
   onUser: null         // 使用者變更回呼
 };
 
-const NOTE_FIELDS = ['title', 'content', 'notebookId', 'tags', 'trash'];
+const NOTE_FIELDS = ['title', 'content', 'notebookId', 'tags', 'trash', 'pinned'];
 const NB_FIELDS = ['name', 'sortOrder'];
 
 function setStatus(s) { state.status = s; if (state.onStatus) state.onStatus(s); }

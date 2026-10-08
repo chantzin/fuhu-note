@@ -15,6 +15,63 @@
   --shadow:0 1px 3px rgba(20,40,30,.08), 0 1px 2px rgba(20,40,30,.05);
   --font:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,-apple-system,sans-serif;
 }
+/* ============ 深色模式 ============ */
+html[data-theme="dark"]{
+  --green:#22A06B;
+  --green-2:#2BB97D;
+  --green-soft:#0F2F21;
+  --ink:#E6EDE8;
+  --ink-2:#A6B5AC;
+  --ink-3:#6B7C71;
+  --paper:#141A16;
+  --surface:#1D2621;
+  --line:#2C382F;
+  --amber:#E0A83C;
+  --red:#E0604F;
+  --shadow:0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.4);
+}
+html[data-theme="dark"] body{background:var(--paper)}
+html[data-theme="dark"] .icon-btn:hover{background:#28332C;color:var(--ink)}
+html[data-theme="dark"] .search-box input{background:#171F1B;border-color:#2C382F;color:var(--ink)}
+html[data-theme="dark"] .search-box input:focus{background:#1D2621;border-color:var(--green-2);box-shadow:0 0 0 3px rgba(34,160,107,.16)}
+html[data-theme="dark"] .nav-item em{background:#28332C;color:var(--ink-3)}
+html[data-theme="dark"] .nav-item.active{background:var(--green-soft);color:var(--green)}
+html[data-theme="dark"] .nav-item.active em{background:#1D2621;color:var(--green)}
+html[data-theme="dark"] .nav-item:hover:not(.active){background:#242E28}
+html[data-theme="dark"] .side-item:hover{background:#242E28}
+html[data-theme="dark"] .tag-chip{background:#28332C;color:var(--ink-2)}
+html[data-theme="dark"] .tag-chip.theme{background:var(--green-soft);color:var(--green)}
+html[data-theme="dark"] .tag-chip.status{background:#1B2740;color:#9DB4E8}
+html[data-theme="dark"] .count.zero{color:#4E5C53}
+html[data-theme="dark"] .btn.ghost{background:var(--surface);border-color:#2C382F;color:var(--ink-2)}
+html[data-theme="dark"] .btn.ghost:hover{border-color:var(--green-2);color:var(--green)}
+html[data-theme="dark"] .btn.danger{background:var(--surface);border-color:#4A2B26;color:var(--red)}
+html[data-theme="dark"] .btn.danger:hover{background:#2B211E}
+html[data-theme="dark"] .login-btn{background:#171F1B;border-color:#2C382F}
+html[data-theme="dark"] .note-card{background:var(--surface)}
+html[data-theme="dark"] .note-card.active{background:#222D27}
+html[data-theme="dark"] .note-card.active{border-left-color:var(--green)}
+html[data-theme="dark"] .tb:hover{background:#28332C;color:var(--ink)}
+html[data-theme="dark"] .tb.active{background:var(--green-soft);color:var(--green)}
+html[data-theme="dark"] .tb.danger:hover{background:#2B211E;color:var(--red)}
+html[data-theme="dark"] .remind-chip{background:#382B10;color:#E0C070}
+html[data-theme="dark"] .remind-bar{background:var(--paper)}
+html[data-theme="dark"] .remind-bar input[type="datetime-local"]{background:var(--surface);border-color:#2C382F;color:var(--ink)}
+html[data-theme="dark"] .tag-ed{background:var(--green-soft);color:var(--green)}
+html[data-theme="dark"] .tag-add{border-color:#44564A;color:var(--ink-3)}
+html[data-theme="dark"] .tag-input-wrap input{background:var(--surface);border-color:#2C382F;color:var(--ink)}
+html[data-theme="dark"] code{background:#28332C}
+html[data-theme="dark"] .toast{background:#33403A}
+html[data-theme="dark"] .empty svg{color:#3A4A3F}
+html[data-theme="dark"] .modal input[type=text],html[data-theme="dark"] .modal input[type=email]{background:var(--surface);border-color:#2C382F;color:var(--ink)}
+html[data-theme="dark"] .set-select{background:var(--surface);border-color:#2C382F;color:var(--ink)}
+html[data-theme="dark"] .clip-code{background:#141A16;border-color:#2C382F;color:var(--ink-2)}
+html[data-theme="dark"] #editor-content a{color:var(--green)}
+html[data-theme="dark"] .fn-file{background:var(--green-soft);border-color:rgba(34,160,107,.25)}
+html[data-theme="dark"] .fn-file:hover{background:#123524;color:var(--green)}
+html[data-theme="dark"] .todo.done span{color:var(--ink-3)}
+html[data-theme="dark"] #editor-content blockquote{color:var(--ink-2);border-left-color:var(--green-2)}
+html[data-theme="dark"] .modal{box-shadow:0 12px 40px rgba(0,0,0,.55)}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{font-family:var(--font);font-size:14px;color:var(--ink);background:var(--paper);overflow:hidden}
@@ -188,6 +245,29 @@ code{font-family:Consolas,Menlo,monospace;font-size:12px;background:#EEF1EC;padd
 .toast.ok{background:var(--green)}
 .toast.err{background:var(--red)}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ============ 釘選（置頂） ============ */
+.pin-flag{display:inline-flex;align-items:center;color:var(--amber);flex:none}
+.pin-flag svg{display:block}
+.tb.pinned{background:var(--green-soft);color:var(--green)}
+
+/* ============ 字數統計 ============ */
+#editor-wc{color:var(--ink-3);margin-right:10px}
+
+/* ============ 設定頁：排序下拉、剪藏碼、附件總覽 ============ */
+.set-select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:var(--surface);color:var(--ink)}
+.set-select:focus{border-color:var(--green-2)}
+.clip-code{width:100%;height:74px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.5;color:var(--ink-2);background:#FBFCFA;resize:none;outline:none;white-space:pre-wrap;word-break:break-all}
+.modal.wide{max-width:640px}
+.att-list{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.att-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:13px;color:var(--ink-2)}
+.att-item:hover{background:var(--green-soft);color:var(--green)}
+.att-item .att-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;flex:none;background:#F0F3EE}
+.att-item .att-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)}
+.att-item .att-meta{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.att-empty{text-align:center;color:var(--ink-3);font-size:13px;padding:26px 10px}
+html[data-theme="dark"] .att-item:hover{background:var(--green-soft)}
+html[data-theme="dark"] .att-item .att-thumb{background:#28332C}
 
 /* ============ 響應式 ============ */
 #btn-menu{display:none}

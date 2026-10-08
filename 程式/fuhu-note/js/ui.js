@@ -45,7 +45,7 @@ export function toast(message, type = 'ok') {
 }
 
 /* ---------- 通用對話框 ---------- */
-export function openModal({ title, body, okText = '確定', cancelable = true, onOk = null, okDisabled = false }) {
+export function openModal({ title, body, okText = '確定', cancelable = true, onOk = null, okDisabled = false, wide = false, onOpen = null }) {
   const root = el('modal-root');
   el('modal-title').textContent = title;
   el('modal-body').innerHTML = body;
@@ -53,10 +53,14 @@ export function openModal({ title, body, okText = '確定', cancelable = true, o
   okBtn.textContent = okText;
   okBtn.disabled = okDisabled;
   root.classList.remove('hidden');
+  const modalEl = root.querySelector('.modal');
+  if (wide) modalEl.classList.add('wide');
+  else modalEl.classList.remove('wide');
   const close = () => { root.classList.add('hidden'); el('modal-body').innerHTML = ''; };
   el('modal-cancel').classList.toggle('hidden', !cancelable);
   el('modal-cancel').onclick = close;
   okBtn.onclick = () => { const ret = onOk ? onOk() : true; if (ret !== false) close(); };
+  if (onOpen) onOpen();
 }
 
 export function confirmDialog(title, message, onConfirm, okText = '確定') {
