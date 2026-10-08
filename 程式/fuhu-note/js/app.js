@@ -580,7 +580,21 @@ function exportBackup() {
   toast('備份檔已匯出，請存入 D:\\FUHU-NOTE\\備份');
 }
 
-function importBackup(file) {
+/* 依副檔名分流：FUHU-NOTE JSON／Joplin Markdown（可多檔）／Evernote ENEX */
+async function importFiles(files) {
+  if (!files || !files.length) return;
+  const list = [...files];
+  const md = list.filter((f) => /\.md$/i.test(f.name));
+  const enex = list.find((f) => /\.enex$/i.test(f.name));
+  const json = list.find((f) => /\.json$/i.test(f.name));
+  if (md.length) { await importJoplinMD(md); return; }
+  if (enex) { await importENEX(enex); return; }
+  if (json) { importJSONBackup(json); return; }
+  toast('不支援的備份檔格式（支援 .json／.md／.enex）', 'err');
+}
+
+/* FUHU-NOTE 自家 JSON 備份（完整取代） */
+function importJSONBackup(file) {
   if (!file) return;
   const r = new FileReader();
   r.onload = async () => {
@@ -601,6 +615,166 @@ function importBackup(file) {
     }
   };
   r.readAsText(file);
+}
+
+/* ---------- Joplin 匯入（Markdown 資料夾／單檔，可多檔） ---------- */
+function parseJoplinMD(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  let title = '', tags = [], created = null, updated = null, content = '';
+  if (m) {
+    const meta = m[1];
+    content = m[2];
+    const tm = meta.match(/^title:\s*(.+)$/m);
+    if (tm) title = tm[1].trim().replace(/^["']|["']$/g, '');
+    const tagm = meta.match(/^tags:\s*(.+)$/m);
+    if (tagm) {
+      const raw = tagm[1].trim();
+      tags = raw.replace(/^\[|\]$/g, '').split(',').map((x) => x.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    const cm = meta.match(/^created_time:\s*(.+)$/m);
+    if (cm) created = Math.round(parseFloat(cm[1].trim()) * 1000);
+    const um = meta.match(/^updated_time:\s*(.+)$/m);
+    if (um) updated = Math.round(parseFloat(um[1].trim()) * 1000);
+  } else {
+    const lines = text.split('\n');
+    title = (lines[0] || '').replace(/^#\s*/, '').trim();
+    content = text;
+  }
+  return { title: title || '（匯入）', tags, created, updated, content: mdToHtml(content) };
+}
+
+/* 簡化 Markdown → HTML（支援待辦／標題／清單／圖片／連結／粗斜體） */
+function mdToHtml(md) {
+  const lines = (md || '').split('\n');
+  let html = '';
+  lines.forEach((line) => {
+    const l = line.trim();
+    if (!l) { return; }
+    const tm = l.match(/^[-*]?\s*\[( |x|X)\]\s+(.*)/);
+    if (tm) {
+      const done = tm[1].toLowerCase() === 'x';
+      html += `<div class="todo${done ? ' done' : ''}"><input type="checkbox"${done ? ' checked' : ''}><span>${escapeHtml(tm[2])}</span></div>`;
+      return;
+    }
+    const hm = l.match(/^(#{1,3})\s+(.*)/);
+    if (hm) { html += `<h${hm[1].length}>${escapeHtml(hm[2])}</h${hm[1].length}>`; return; }
+    const lm = l.match(/^[-*]\s+(.*)/);
+    if (lm) { html += `<div>• ${escapeHtml(lm[1])}</div>`; return; }
+    if (/^-{3,}$/.test(l)) { html += '<hr>'; return; }
+    const im = l.match(/!\[(.*?)\]\((.*?)\)/);
+    if (im) {
+      html += `<span class="fn-wrap"><img class="fn-img" src="${im[2]}" alt="${escapeHtml(im[1])}"><span class="fn-del" role="button" title="刪除圖片">×</span></span>`;
+      return;
+    }
+    let out = l.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    out = out.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/__(.*?)__/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+    html += `<div>${out}</div>`;
+  });
+  return html;
+}
+
+async function importJoplinMD(files) {
+  let count = 0;
+  for (const f of files) {
+    let text;
+    try { text = await f.text(); } catch (e) { continue; }
+    const note = parseJoplinMD(text);
+    if (!note.title && !note.content) continue;
+    await createImportedNote(note);
+    count++;
+  }
+  await loadData();
+  renderAll();
+  toast(`已匯入 ${count} 則筆記（Joplin）`);
+}
+
+/* ---------- Evernote 匯入（ENEX） ---------- */
+function b64ToUtf8(b64) {
+  try {
+    const bytes = Uint8Array.from(atob(b64.replace(/\s+/g, '')), (c) => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch (e) { return ''; }
+}
+
+function enmlToHtml(enml) {
+  try {
+    const doc = new DOMParser().parseFromString(enml, 'text/xml');
+    const note = doc.querySelector('en-note');
+    return note ? note.innerHTML : '';
+  } catch (e) { return ''; }
+}
+
+function parseENEXDate(s) {
+  if (!s) return null;
+  const m = s.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z|[+-]\d{4})?/);
+  if (!m) return null;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+}
+
+function parseENEX(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('無法解析 XML');
+  const notes = [];
+  doc.querySelectorAll('note').forEach((nEl) => {
+    const title = (nEl.querySelector('title')?.textContent || '').trim();
+    const tags = [...nEl.querySelectorAll('tag')].map((t) => t.textContent.trim()).filter(Boolean);
+    const created = parseENEXDate(nEl.querySelector('created')?.textContent);
+    const updated = parseENEXDate(nEl.querySelector('updated')?.textContent);
+    let content = '';
+    const contentEl = nEl.querySelector('content');
+    if (contentEl) {
+      const enml = b64ToUtf8((contentEl.textContent || '').trim());
+      content = enmlToHtml(enml);
+    }
+    // 資源（圖片/附件）依序替換 <en-media> 標記
+    const resources = [...nEl.querySelectorAll('resource')];
+    resources.forEach((res) => {
+      const dataEl = res.querySelector('data');
+      if (!dataEl) return;
+      const mime = (res.querySelector('mime')?.textContent || '').trim();
+      const fnameEl = res.querySelector('resource-attributes file-name');
+      const name = fnameEl ? fnameEl.textContent.trim() : '';
+      const dataUrl = `data:${mime || 'application/octet-stream'};base64,${dataEl.textContent.replace(/\s+/g, '')}`;
+      content = content.replace(/<en-media[^>]*\/?>/, () => {
+        const alt = escapeHtml(name || '附件');
+        return mime.startsWith('image/')
+          ? `<span class="fn-wrap"><img class="fn-img" src="${dataUrl}" alt="${alt}"><span class="fn-del" role="button" title="刪除圖片">×</span></span>`
+          : `<span class="fn-wrap"><a class="fn-file" href="${dataUrl}" target="_blank" rel="noopener">📎 ${alt}</a><span class="fn-del" role="button" title="刪除附件">×</span></span>`;
+      });
+    });
+    // 移除殘留的 <en-media>
+    content = content.replace(/<en-media[^>]*\/?>/g, '');
+    if (title || content) notes.push({ title, content, tags, created, updated });
+  });
+  return notes;
+}
+
+async function importENEX(file) {
+  let text;
+  try { text = await file.text(); } catch (e) { toast('無法讀取檔案', 'err'); return; }
+  let notes;
+  try { notes = parseENEX(text); } catch (e) { toast('ENEX 格式錯誤：' + e.message, 'err'); return; }
+  if (!notes.length) { toast('ENEX 中沒有可匯入的筆記', 'err'); return; }
+  let count = 0;
+  for (const n of notes) { await createImportedNote(n); count++; }
+  await loadData();
+  renderAll();
+  toast(`已匯入 ${count} 則筆記（Evernote）`);
+}
+
+/* 建立匯入的筆記（保留原時間與標籤，匯入「未分類」） */
+async function createImportedNote({ title, content, tags, created, updated }) {
+  const now = Date.now();
+  const note = {
+    id: genUid('nt'), ownerId: getUid(), notebookId: null,
+    title: title || '（匯入）', content: content || '', contentText: htmlToText(content).toLowerCase(), tags: tags || [],
+    trash: false, deleted: false, remindAt: null, reminded: false,
+    createdAt: created || now, updatedAt: updated || now, version: 1,
+    f: { title: now, content: now, tags: now, createdAt: now, updatedAt: now, trash: now }
+  };
+  await saveNoteLocal(note);
+  enqueue({ coll: 'notes', action: 'upsert', data: note });
+  cloudUpsert('notes', note);
 }
 
 /* ---------- Markdown 匯出 ---------- */
@@ -960,7 +1134,7 @@ function wireEvents() {
   // 附件（input 覆蓋按鈕，同圖片機制）
   el('attach-file').addEventListener('change', (e) => { insertAttachment(e.target.files[0]); e.target.value = ''; });
   setInterval(checkReminders, 60000);
-  el('import-file').addEventListener('change', (e) => { importBackup(e.target.files[0]); e.target.value = ''; });
+  el('import-file').addEventListener('change', (e) => { importFiles(e.target.files); e.target.value = ''; });
   el('set-clear-local').onclick = () => {
     confirmDialog('清除本機資料', '將刪除本機所有筆記與筆記本（雲端資料不受影響）。確定繼續？', async () => {
       for (const n of state.notes) { await deleteNoteLocal(n.id); enqueue({ coll: 'notes', action: 'delete', data: { id: n.id } }); cloudDelete('notes', n.id); }

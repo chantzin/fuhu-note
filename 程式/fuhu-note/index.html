@@ -181,7 +181,7 @@
   </main>
 
   <!-- ============ 隱藏共用元件 ============ -->
-  <input type="file" id="import-file" accept=".json,application/json" class="hidden">
+  <input type="file" id="import-file" accept=".json,.md,.enex,application/json,text/markdown,text/plain,application/xml" multiple class="hidden">
 
   <!-- 通用對話框 -->
   <div id="modal-root" class="modal-root hidden">
@@ -212,7 +212,9 @@
             <button id="set-export-md" class="btn ghost">匯出全部為 Markdown</button>
             <button id="set-import" class="btn ghost">匯入備份</button>
           </div>
-          <p class="set-note">建議將備份檔存入 <code>D:\FUHU-NOTE\備份</code> 資料夾。</p>
+          <p class="set-note">建議將備份檔存入 <code>D:\FUHU-NOTE\備份</code> 資料夾。<br>
+          匯入支援：<b>FUHU-NOTE 備份（.json）</b>／<b>Joplin 匯出（.md，可選多檔）</b>／<b>Evernote 匯出（.enex）</b>。<br>
+          Joplin：匯出時選「Markdown 資料夾」；Evernote：匯出時選「.enex」。</p>
         </section>
         <section class="set-sec danger-sec">
           <h3>本機資料</h3>
