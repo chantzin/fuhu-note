@@ -1271,8 +1271,21 @@ function wireEvents() {
   el('btn-new-note').onclick = newNote;
   el('empty-action').onclick = newNote;
 
-  // 搜尋
-  el('search-input').addEventListener('input', (e) => { state.q = e.target.value.trim(); renderList(); });
+  // 搜尋（側欄＋主頁功能區雙向連動）
+  el('search-input').addEventListener('input', (e) => {
+    el('home-search').value = e.target.value;
+    state.q = e.target.value.trim(); renderList();
+  });
+  el('home-search').addEventListener('input', (e) => {
+    el('search-input').value = e.target.value;
+    state.q = e.target.value.trim(); renderList();
+  });
+
+  // 主頁功能區
+  el('home-import').onclick = () => el('import-file').click();
+  el('home-att').onclick = listAttachments;
+  el('home-theme').onclick = toggleTheme;
+  el('home-settings').onclick = openSettings;
 
   // 側欄委派（筆記本、標籤）
   el('notebook-list').addEventListener('click', (e) => {
